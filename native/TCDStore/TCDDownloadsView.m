@@ -401,8 +401,12 @@ static void TCDChipColours(NSString *verb, NSColor **bg, NSColor **fg) {
 }
 
 - (NSUInteger)indexOfTransfer:(NSString *)identifier {
-    for (NSUInteger i = 0; i < self.transfers.count; i++)
-        if ([self.transfers[i].identifier isEqualToString:identifier]) return i;
+    for (NSUInteger i = 0; i < self.transfers.count; i++) {
+        // -objectAtIndexedSubscript: returns id, and dot syntax on id has no
+        // declared property to resolve, so the element needs a type first.
+        TCDTransfer *t = self.transfers[i];
+        if ([t.identifier isEqualToString:identifier]) return i;
+    }
     return NSNotFound;
 }
 

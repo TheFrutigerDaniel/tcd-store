@@ -73,8 +73,9 @@ static NSString *TCDVerbForRelation(TCDVersionRelation r) {
         [steps addObject:step];
     };
 
+    TCDPackage *head = plan.packages.lastObject;
     add(TCDInstallStageDownload,   @"Downloading…", [NSString stringWithFormat:
-        @"%@ v%@", plan.packages.lastObject.name, plan.primaryVersion ?: plan.packages.lastObject.version]);
+        @"%@ v%@", head.name, plan.primaryVersion ?: head.version]);
     add(TCDInstallStageVerify,     @"Verifying checksum…", @"SHA-256 against the source index");
     add(TCDInstallStageAuthorise,  @"Requesting authorisation…", @"Needed for system-level packages");
     add(TCDInstallStageInstall,    @"Installing…",    @"/usr/sbin/installer -target /");

@@ -30,8 +30,20 @@ LDFLAGS := -framework Cocoa -framework Security \
 SOURCES := $(wildcard TCDStore/*.m)
 OBJECTS := $(patsubst TCDStore/%.m,$(BUILD)/%.o,$(SOURCES))
 
-.PHONY: all clean
+.PHONY: all clean check
 all: $(APP)
+
+# Every source, every error, in one run. `make` stops at the first failing file
+# and hides the rest, which turns a build-out into a guessing game; this does
+# not, so the whole backlog arrives at once.
+check:
+	@fail=0; \
+	for f in TCDStore/*.m; do \
+	  out=`clang $(CFLAGS) -fsyntax-only $$f 2>&1`; \
+	  if [ -n "$$out" ]; then echo "===== $$f"; echo "$$out"; fail=1; fi; \
+	done; \
+	if [ $$fail -eq 0 ]; then echo "all sources pass -fsyntax-only"; fi; \
+	exit $$fail
 
 $(APP): $(BUILD)/TCDStore
 	@mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
