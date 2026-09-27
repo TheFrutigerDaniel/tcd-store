@@ -56,14 +56,37 @@ Nothing reads back up the chain.
 
 | Prototype screen | Native |
 |---|---|
-| Sidebar (Featured / Categories / Updates / Search / Installed / Sources / Settings) | `NSOutlineView` in `TCDAppDelegate` |
-| Featured grid | `NSTableView`, `-installPackage:` from a double-click |
-| Package detail, Description tab | `TCDPackage` |
+| Dark card sidebar (Store group + Categories group) | `NSOutlineView` in `TCDAppDelegate` |
+| Large icon grid | `NSTableView`, `-installPackage:` from a double-click |
+| Blue triangle version disclosure | `TCDPackage.availableVersions` + `-relationToVersion:` |
+| Package detail, Versions tab | `-planForPackage:atVersion:` |
 | Package detail, Dependencies tab | `TCDResolver`, `-removalBlockersForPackage:` |
-| Sources list + Add Source | `-addSource:`, `-removeSourceWithIdentifier:` |
+| Sources list + Add / Remove | `-addSource:`, `-removeSourceWithIdentifier:` |
 | Install confirm sheet | `TCDInstallPlan` rendered directly — the sheet **is** the plan |
 | Install progress | `TCDInstallSession`, one `TCDInstallStep` per stage |
 | Settings → signing | `TCDSigner` |
+
+## Version disclosure
+
+The blue triangle on each tile is not decoration. A source index may list the
+same `Package` stanza more than once with different `Version:` fields, and
+`TCDIndexParser` merges those into `TCDPackage.availableVersions`, newest
+first. That is what makes all three operations available from one place:
+
+- **install** — nothing on disk yet
+- **update** — the chosen version is newer than what is installed
+- **downgrade** — the chosen version is older, and the sheet says so before you
+  commit, because files written by the newer version are *not* cleaned up
+- **reinstall** — the version already on disk
+
+Two consequences worth stating, because they are easy to get wrong:
+
+- **A downgraded package is still updatable.** `hasUpdate` is derived from
+  `version` (what the source offers) against `installedVersion` (what is on
+  disk), so rolling back and rolling forward both work with no extra state.
+- **Dependencies do not follow the version you chose.** `versionOverrides` is
+  keyed by identifier and only ever contains the primary package, so asking for
+  iTerm2 2.8.0 does not drag every dependency back a decade with it.
 
 The install step list is data, not control flow. `-[TCDInstaller stepsForPlan:]`
 returns an array; the progress window renders it; `additionalPipelineSteps` from
@@ -100,6 +123,8 @@ Full field list in `TCDIndexParser.h`. Notable points:
   of the named package. Tightening that is a resolver change, not a parser
   change, and until someone writes a real resolver the loose form is the
   honest one.
+- **Repeated stanzas for one package become a version list.** They are merged
+  rather than deduplicated, which is what keeps older versions installable.
 - **A refresh is a transaction.** A connection dropped halfway through a 4 MB
   index cannot leave a package list missing its second half.
 - **The last good index is cached** in `sources.index_blob`, so a source that
@@ -158,3 +183,7 @@ Stated plainly so nobody assumes it exists:
   `AuthorizationExecuteWithPrivileges` path fully. The `SMJobBless` path is a
   stub, because it only matters under the ad-hoc signing policy (see
   `docs/SIGNING.md`).
+- **Differential "steps" for a downgrade.** A downgrade currently downloads
+  the older payload whole and reuses the newer version's install script. Doing
+  it properly means the index has to carry per-version pre- and post-install
+  scripts, which it does not.

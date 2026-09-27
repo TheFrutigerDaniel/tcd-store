@@ -48,6 +48,12 @@ typedef NS_OPTIONS(NSUInteger, TCDPackageArch) {
 @property (nonatomic, copy)   NSArray *dependencies;   // NSString identifiers
 @property (nonatomic, copy)   NSArray *conflicts;      // NSString identifiers
 
+/* Every version this source carries, newest first. A source index may list
+   several, which is what makes install / update / downgrade possible from one
+   place. Each entry is a dictionary of the stanza fields for that version:
+   version, sizeBytes, sha256, downloadURLString, releaseDate. */
+@property (nonatomic, copy)   NSArray *availableVersions;
+
 // Local state, filled from the package database.
 @property (nonatomic, assign) BOOL installed;
 @property (nonatomic, copy)   NSString *installedVersion;
@@ -55,6 +61,13 @@ typedef NS_OPTIONS(NSUInteger, TCDPackageArch) {
 @property (nonatomic, copy)   NSString *receiptID;  // for .pkg
 
 @property (nonatomic, readonly) BOOL hasUpdate;
+
+typedef NS_ENUM(NSInteger, TCDVersionRelation) {
+    TCDVersionRelationNew,         // not installed at all
+    TCDVersionRelationUpdate,       // newer than what is installed
+    TCDVersionRelationDowngrade,   // older than what is installed
+    TCDVersionRelationReinstall    // exactly what is installed
+};
 
 + (TCDPackageType)typeFromString:(NSString *)s;
 + (NSString *)stringForType:(TCDPackageType)t;
@@ -65,6 +78,12 @@ typedef NS_OPTIONS(NSUInteger, TCDPackageArch) {
 /* Dotted-version compare that tolerates the "1.8.0_202" style used by some
    legacy packages. Returns >0 if a is newer than b. */
 + (NSInteger)compareVersion:(NSString *)a toVersion:(NSString *)b;
+
+/* The entry for a specific version, or nil if the source does not carry it. */
+- (NSDictionary *)versionEntry:(NSString *)version;
+
+/* install / update / downgrade / reinstall, relative to what is on disk. */
+- (TCDVersionRelation)relationToVersion:(NSString *)version;
 
 - (BOOL)isSystemLevel;
 - (NSString *)localizedSizeString;

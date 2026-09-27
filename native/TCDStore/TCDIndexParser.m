@@ -26,8 +26,8 @@
 
 + (NSArray *)parseIndexString:(NSString *)text
            sourceIdentifier:(NSString *)sourceIdentifier {
-    NSMutableArray *packages = [NSMutableArray array];
-    if (!text.length) return packages;
+    NSMutableArray *stanzas = [NSMutableArray array];
+    if (!text.length) return [NSArray array];
 
     NSArray *rawLines = [text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     NSMutableDictionary *fields = [NSMutableDictionary dictionary];
@@ -39,7 +39,7 @@
             TCDPackage *p = [self packageFromFields:fields
                                           description:description
                                      sourceIdentifier:sourceIdentifier];
-            if (p) [packages addObject:p];
+            if (p) [stanzas addObject:p];
         }
         [fields removeAllObjects];
         [description setString:@""];
@@ -83,7 +83,49 @@
     }
     flush();   // trailing stanza with no blank line after it
 
-    return packages;
+    return [self mergeStanzas:stanzas];
+}
+
+/* A source may list the same Package more than once with different Versions.
+   That is what makes downgrade possible: the older stanzas stay in the index
+   so the store can offer them, and the newest one supplies the package's
+   current metadata. */
++ (NSArray *)mergeStanzas:(NSArray *)stanzas {
+    NSMutableArray *ordered = [NSMutableArray array];
+    NSMutableDictionary *seen = [NSMutableDictionary dictionary];
+
+    for (TCDPackage *p in stanzas) {
+        TCDPackage *head = [seen objectForKey:p.identifier];
+        if (!head) {
+            [seen setObject:p forKey:p.identifier];
+            [ordered addObject:p];
+        }
+    }
+    for (TCDPackage *p in stanzas) {
+        TCDPackage *head = [seen objectForKey:p.identifier];
+        NSDictionary *entry = [NSDictionary dictionaryWithObjectsAndKeys:
+            p.version,          @"version",
+            [NSNumber numberWithUnsignedLongLong:p.sizeBytes], @"sizeBytes",
+            p.sha256 ?: @"",    @"sha256",
+            p.downloadURLString ?: @"", @"downloadURLString", nil];
+        // the first sighting is the newest, so it lands at the head
+        [head.availableVersions insertObject:entry atIndex:0];
+
+        if ([TCDPackage compareVersion:p.version toVersion:head.version] > 0) {
+            // shouldn't happen given the sort below, but stay correct if it does
+            head.version = p.version;
+            head.downloadURLString = p.downloadURLString;
+            head.sha256 = p.sha256;
+            head.sizeBytes = p.sizeBytes;
+        }
+    }
+    for (TCDPackage *head in ordered) {
+        [head.availableVersions sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            return [TCDPackage compareVersion:[b objectForKey:@"version"]
+                                     toVersion:[a objectForKey:@"version"]];
+        }];
+    }
+    return ordered;
 }
 
 + (TCDPackage *)packageFromFields:(NSDictionary *)f

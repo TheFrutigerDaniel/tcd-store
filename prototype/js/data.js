@@ -294,7 +294,34 @@ PKGS.forEach(function(p,i){
   p.shots      = p.type === 'app' ? 3 : (p.type === 'pkg' ? 2 : 1);
   p._accent    = ICON_DEFS[p.icon[0]];
   p._glyph     = GLYPHS[p.icon[1]] || GLYPHS.cube;
+  p.versions   = buildVersionHistory(p);
 });
+
+/* ------------------------------------------------------------------
+   Version history.
+   A source index can list more than one version of a package, which is
+   what the blue-triangle disclosure offers: install a specific version,
+   update to a newer one, or roll back to an older one. The real versions
+   come from the changelog where there is one; the rest are stepped down
+   so every package has something to unfold.
+   ------------------------------------------------------------------ */
+function buildVersionHistory(p){
+  const out = [p.version];
+  (p.changelog || []).forEach(function(c){
+    if (out.indexOf(c[0]) === -1) out.push(c[0]);
+  });
+  let guard = 0;
+  while (out.length < 4 && guard++ < 20) out.push(stepDownVersion(out[out.length - 1]));
+  return out;
+}
+function stepDownVersion(v){
+  const parts = String(v).split('.');
+  if (parts.length < 2) return v;
+  const last = parts[parts.length - 1];
+  const n = parseInt(last, 10);
+  parts[parts.length - 1] = String(isNaN(n) ? last : Math.max(0, n - 1));
+  return parts.join('.');
+}
 
 /* pre-installed state so Installed / Updates aren't empty on first run */
 const PREINSTALLED = { 'bettertouchtool':'1.9.9', 'caffeine':'1.0.1' };
@@ -315,6 +342,18 @@ const CATEGORIES = [
   { key:'Networking',      icon:['cyan','globe'],       blurb:'Browsers, transfer, tunnels.' },
   { key:'Video',           icon:['indigo','camera'],     blurb:'Players, encoders, editors.' }
 ];
+
+/* A source index may offer several versions. Newest first. */
+function newestFirst(versions){
+  return versions.slice().sort(function(a,b){ return vcmp(b, a); });
+}
+function relationToInstalled(pkg, version){
+  if (!pkg.installed) return 'new';
+  const c = vcmp(version, pkg.pkgVersion || '0');
+  if (c > 0) return 'update';
+  if (c < 0) return 'downgrade';
+  return 'reinstall';
+}
 
 /* version compare — semver-ish, with the "legacy 1.8.0_202" style handled */
 function vcmp(a, b){

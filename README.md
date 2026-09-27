@@ -21,8 +21,16 @@ python3 -m http.server 8080
 
 Then open <http://localhost:8080>. No build step, no dependencies.
 
-It is a real, working prototype — not a mockup. Click **Mesa3D for Intel HD
-4000** and press Install: the dependency on *Intel Graphics Fixup* is resolved
+It is a real, working prototype — not a mockup. Dark cards down the left
+(Store, then Categories), a large icon grid on the right.
+
+Try the **blue triangle** in the corner of any tile. It unfolds every version
+the source carries, Cydia-style, so you can install, update, **downgrade**, or
+reinstall. Downgrading is explicitly labelled and warned about, and a package
+sitting behind its source shows as updatable again — the route back up is the
+same triangle.
+
+Click **Mesa3D for Intel HD 4000** and press Install: the dependency on *Intel Graphics Fixup* is resolved
 and pulled into the plan, the password warning appears because a `.pkg` is in
 it, and the progress window walks the real pipeline. Then go to
 **Settings → Code signing**, switch to ad-hoc re-signing, and install something
@@ -39,6 +47,9 @@ Things worth trying:
   That is the orphan rule from `docs/ARCHITECTURE.md` doing its job in the UI.
 - Install *Mesa3D*, then *GraphicsOverride* — the second is refused, because
   they conflict.
+- **Sources → All Sources → Remove** on *TCD Legacy Archive*: it warns that
+  packages from it are installed, and confirms that removing a source does not
+  uninstall anything.
 
 ## Test it
 
@@ -48,8 +59,9 @@ cd prototype && python3 -m http.server 8080 &
 node test/verify.js
 ```
 
-83 assertions covering every screen, the dependency resolver, both signing
-policies, the orphan rules and the source flows. It runs the prototype's real
+120 assertions covering every screen, the dependency resolver, the version
+disclosure and downgrade path, both signing policies, the orphan rules and the
+source flows. It runs the prototype's real
 scripts in a real DOM, so it catches runtime errors rather than just checking
 that markup exists.
 
@@ -85,9 +97,10 @@ trusted, which most good legacy packages are not.
 
 ## Status
 
-The prototype is complete and tested. The native tree is a real, readable
-implementation of the model, index parser, database, resolver, install engine,
-privilege and signing layers — but the AppKit UI is a source list and a table,
+The prototype is complete and tested, and follows the concept: dark card
+sidebar, large icon grid, Cydia-style version disclosure. The native tree is a
+real, readable implementation of the model, index parser, database, resolver,
+install engine, privilege and signing layers — but the AppKit UI is a source list and a table,
 not the designed interface, and there is no rollback, no differential download,
 and no real version-constraint resolver. `docs/ARCHITECTURE.md` has an explicit
 list of what is deliberately not built yet.

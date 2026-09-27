@@ -12,8 +12,9 @@
     if (self) {
         _type = TCDPackageTypeApp;
         _arch = TCDPackageArchAny;
-        _dependencies = [[NSArray alloc] init];
-        _conflicts    = [[NSArray alloc] init];
+        _dependencies      = [[NSArray alloc] init];
+        _conflicts         = [[NSArray alloc] init];
+        _availableVersions = [[NSArray alloc] init];
     }
     return self;
 }
@@ -41,6 +42,7 @@
     p.minimumSystemVersion = self.minimumSystemVersion;
     p.dependencies      = self.dependencies;
     p.conflicts         = self.conflicts;
+    p.availableVersions = self.availableVersions;
     p.installed         = self.installed;
     p.installedVersion  = self.installedVersion;
     p.autoInstalled     = self.autoInstalled;
@@ -87,6 +89,32 @@
 }
 
 + (NSString *)stringForArchMask:(TCDPackageArch)a { return [self stringForArch:a]; }
+
+- (NSDictionary *)versionEntry:(NSString *)version {
+    for (NSDictionary *e in self.availableVersions) {
+        if ([[e objectForKey:@"version"] isEqualToString:version]) return e;
+    }
+    return nil;
+}
+
+- (TCDVersionRelation)relationToVersion:(NSString *)version {
+    if (!version.length) return TCDVersionRelationReinstall;
+    if (!self.installed || !self.installedVersion.length) return TCDVersionRelationNew;
+    NSInteger c = [TCDPackage compareVersion:version toVersion:self.installedVersion];
+    if (c > 0) return TCDVersionRelationUpdate;
+    if (c < 0) return TCDVersionRelationDowngrade;
+    return TCDVersionRelationReinstall;
+}
+
++ (NSString *)stringForRelation:(TCDVersionRelation)r {
+    switch (r) {
+        case TCDVersionRelationNew:        return @"Install";
+        case TCDVersionRelationUpdate:      return @"Update";
+        case TCDVersionRelationDowngrade:  return @"Downgrade";
+        case TCDVersionRelationReinstall:  return @"Reinstall";
+    }
+    return @"Install";
+}
 
 - (BOOL)isSystemLevel {
     return self.type == TCDPackageTypePkg || self.type == TCDPackageTypeKext;

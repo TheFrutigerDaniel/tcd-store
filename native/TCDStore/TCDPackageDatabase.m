@@ -6,6 +6,21 @@
 #import "TCDPackageDatabase.h"
 #import <sqlite3.h>
 
+/* availableVersions is a small list of flat dictionaries, so it round-trips
+   through JSON rather than a join table. The list is bounded by what a source
+   actually publishes — a handful of entries at most. */
+static NSString *TCDJSONString(NSArray *a) {
+    if (!a.count) return nil;
+    NSData *d = [NSJSONSerialization dataWithJSONObject:a options:0 error:NULL];
+    return d ? [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding] : nil;
+}
+static NSArray *TCDJSONArray(NSString *s) {
+    if (!s.length) return [NSArray array];
+    NSData *d = [s dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *a = [NSJSONSerialization JSONObjectWithData:d options:0 error:NULL];
+    return [a isKindOfClass:[NSArray class]] ? a : [NSArray array];
+}
+
 static NSString *const kSchemaVersion = @"1";
 
 @interface TCDPackageDatabase () {
@@ -65,6 +80,18 @@ static NSString *const kSchemaVersion = @"1";
     return rc == SQLITE_OK;
 }
 
+- (BOOL)columnExists:(NSString *)column inTable:(NSString *)table {
+    NSString *sql = [NSString stringWithFormat:@"PRAGMA table_info(%@)", table];
+    sqlite3_stmt *st = NULL;
+    if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) return NO;
+    BOOL found = NO;
+    while (sqlite3_step(st) == SQLITE_ROW) {
+        if ([[self textAtColumn:1] isEqualToString:column]) { found = YES; break; }
+    }
+    sqlite3_finalize(st);
+    return found;
+}
+
 - (BOOL)migrateWithError:(NSError **)error {
     NSString *version = [[NSUserDefaults standardUserDefaults] stringForKey:@"TCDSchemaVersion"];
     if ([version isEqualToString:kSchemaVersion]) return YES;
@@ -97,6 +124,7 @@ static NSString *const kSchemaVersion = @"1";
         @"  installed_version TEXT,"
         @"  auto_installed  INTEGER DEFAULT 0,"
         @"  receipt_id      TEXT,"
+        @"  available_versions TEXT,"
         @"  PRIMARY KEY (source, identifier)"
         @");"] &&
     [self exec:
@@ -119,6 +147,18 @@ static NSString *const kSchemaVersion = @"1";
             [NSDictionary dictionaryWithObject:@"schema migration failed"
                                          forKey:NSLocalizedDescriptionKey]];
         return NO;
+    }
+
+    // CREATE TABLE IF NOT EXISTS will not add a column to a database that
+    // already exists, so each new column is added separately. SQLite has no
+    // "ADD COLUMN IF NOT EXISTS", hence the lookup.
+    if (![self columnExists:@"available_versions" inTable:@"packages"]) {
+        if (![self exec:@"ALTER TABLE packages ADD COLUMN available_versions TEXT"]) {
+            if (error) *error = [NSError errorWithDomain:@"TCDStore" code:1 userInfo:
+                [NSDictionary dictionaryWithObject:@"could not add available_versions"
+                                             forKey:NSLocalizedDescriptionKey]];
+            return NO;
+        }
     }
     [[NSUserDefaults standardUserDefaults] setObject:kSchemaVersion forKey:@"TCDSchemaVersion"];
     return YES;
@@ -166,7 +206,7 @@ static NSString *const kSchemaVersion = @"1";
         " identifier,source,name,version,summary,description,developer,section,changelog,"
         " icon_url,download_url,sha256,install_prefix,type,arch,size_bytes,rating_count,"
         " rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,receipt_id)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, sql, -1, &st, NULL) != SQLITE_OK) return;
 
@@ -196,6 +236,7 @@ static NSString *const kSchemaVersion = @"1";
     [self bindText:"installed_version" index:i++ value:p.installedVersion];
     sqlite3_bind_int(_db, i++, p.autoInstalled ? 1 : 0);
     [self bindText:"receipt_id" index:i++ value:p.receiptID];
+    [self bindText:"available_versions" index:i++ value:TCDJSONString(p.availableVersions)];
 
     sqlite3_step(st);
     sqlite3_finalize(st);
@@ -228,6 +269,7 @@ static NSString *const kSchemaVersion = @"1";
     p.installedVersion   = [self textAtColumn:22];
     p.autoInstalled      = sqlite3_column_int(_db, 23) != 0;
     p.receiptID          = [self textAtColumn:24];
+    p.availableVersions  = TCDJSONArray([self textAtColumn:25]);
     return p;
 }
 
@@ -259,7 +301,8 @@ static NSString *const kSchemaVersion = @"1";
 static NSString *const kSelectColumns =
     @"identifier,source,name,version,summary,description,developer,section,changelog,"
     @"icon_url,download_url,sha256,install_prefix,type,arch,size_bytes,rating_count,"
-    @"rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,receipt_id";
+    @"rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,"
+    @"receipt_id,available_versions";
 
 - (NSArray *)allPackages {
     return [self query:[NSString stringWithFormat:@"SELECT %@ FROM packages ORDER BY name", kSelectColumns]];

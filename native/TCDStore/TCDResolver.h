@@ -29,6 +29,12 @@
 @property (nonatomic, copy) NSArray *primaryIdentifiers;// what the user actually asked for
 @property (nonatomic, copy) NSArray *blockingConflicts;  // TCDConflict records
 @property (nonatomic, copy) NSString *failureReason;
+
+/* identifier -> version, for the primary packages only. Dependencies always
+   install at whatever version the source currently offers. */
+@property (nonatomic, copy) NSDictionary *versionOverrides;
+@property (nonatomic, copy) NSString *primaryVersion;
+@property (nonatomic, assign) TCDVersionRelation primaryRelation;
 - (BOOL)isValid;
 - (unsigned long long)totalSizeBytes;
 - (BOOL)requiresPrivilege;
@@ -46,6 +52,11 @@
 
 /* Resolves the plan for installing or updating one package. */
 - (TCDInstallPlan *)planForPackage:(TCDPackage *)pkg;
+
+/* Resolves the plan for one *specific* version of a package. Passing nil is
+   the same as -planForPackage:. The plan records the target so the installer
+   fetches that stanza's payload rather than the newest one. */
+- (TCDInstallPlan *)planForPackage:(TCDPackage *)pkg atVersion:(NSString *)version;
 
 /* Resolves the plan for a batch (Update All). */
 - (TCDInstallPlan *)planForPackages:(NSArray *)pkgs;

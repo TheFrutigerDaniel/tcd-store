@@ -13,6 +13,7 @@
         _packages            = [NSArray array];
         _primaryIdentifiers  = [NSArray array];
         _blockingConflicts   = [NSArray array];
+        _versionOverrides    = [NSDictionary dictionary];
     }
     return self;
 }
@@ -67,8 +68,41 @@
 /* ------------------------------------------------------------------ */
 
 - (TCDInstallPlan *)planForPackage:(TCDPackage *)pkg {
-    return [self planForPackages:(pkg ? [NSArray arrayWithObject:pkg] : [NSArray array])
-                  withPrimary:(pkg ? [NSArray arrayWithObject:pkg.identifier] : [NSArray array])];
+    return [self planForPackage:pkg atVersion:nil];
+}
+
+- (TCDInstallPlan *)planForPackage:(TCDPackage *)pkg atVersion:(NSString *)version {
+    if (!pkg) return [[TCDInstallPlan alloc] init];
+    NSString *target = version ?: pkg.version;
+
+    TCDPackage *snapshot = [pkg copy];
+    NSDictionary *entry = [snapshot versionEntry:target];
+    if (entry) {
+        // point the package at the stanza we actually intend to fetch
+        snapshot.version = target;
+        snapshot.sizeBytes = [[entry objectForKey:@"sizeBytes"] unsignedLongLongValue];
+        NSString *sha = [entry objectForKey:@"sha256"];
+        if (sha.length) snapshot.sha256 = sha;
+        NSString *dl = [entry objectForKey:@"downloadURLString"];
+        if (dl.length) snapshot.downloadURLString = dl;
+    } else if (version && ![version isEqualToString:pkg.version]) {
+        TCDInstallPlan *bad = [[TCDInstallPlan alloc] init];
+        bad.failureReason = [NSString stringWithFormat:
+            @"%@ is not available from %@", version, pkg.sourceIdentifier ?: @"this source"];
+        return bad;
+    }
+
+    TCDInstallPlan *plan = [self planForPackages:[NSArray arrayWithObject:snapshot]
+                                    withPrimary:[NSArray arrayWithObject:pkg.identifier]];
+    // the catalogue must keep carrying the real package, not the snapshot
+    [_byIdentifier setObject:pkg forKey:pkg.identifier];
+
+    plan.primaryVersion   = target;
+    plan.primaryRelation  = [pkg relationToVersion:target];
+    plan.versionOverrides = (version ? [NSDictionary dictionaryWithObject:target
+                                                                   forKey:pkg.identifier]
+                                     : [NSDictionary dictionary]);
+    return plan;
 }
 
 - (TCDInstallPlan *)planForPackages:(NSArray *)pkgs {

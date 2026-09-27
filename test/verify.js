@@ -55,6 +55,7 @@ const until = async (fn, ms = 12000) => {
 };
 
 let pass = 0, fail = 0;
+const SOURCES_len = () => window.eval('SOURCES.length');
 function check(name, cond, extra) {
   if (cond) { pass++; console.log('  ok   ' + name); }
   else { fail++; console.log('  FAIL ' + name + (extra ? '  →  ' + extra : '')); }
@@ -67,8 +68,13 @@ function section(t) { console.log('\n' + t); }
   if (window.eval('typeof byId') !== 'function') { console.error('app scripts never loaded'); process.exit(1); }
 
   section('boot');
-  check('sidebar rendered', $$('.side-item').length > 5, $$('.side-item').length + ' items');
-  check('featured grid populated', $$('.cell[data-pkg]').length >= 8);
+  check('sidebar rendered as dark cards', $$('.nav-card').length > 5, $$('.nav-card').length + ' cards');
+  check('sidebar groups are Store then Categories', $$('.side-head').length === 2, $$('.side-head').length + '');
+  check('category cards present', $$('.nav-card[data-nav="categorylist"]').length === 6,
+    $$('.nav-card[data-nav="categorylist"]').length + '');
+  check('featured grid populated', $$('.cell[data-pkg]').length >= 8, $$('.cell[data-pkg]').length + '');
+  check('tiles use large icons', $$('.cell .aicon.sz-128').length >= 8);
+  check('every tile has a version disclosure', $$('.cell .ver-caret').length === $$('.cell[data-pkg]').length);
   check('window title set', $('#winTitle').textContent === 'Featured', $('#winTitle').textContent);
   check('status bar shows sources', /source/.test($('#statusbar').textContent));
   check('every package has a real glyph',
@@ -88,15 +94,16 @@ function section(t) { console.log('\n' + t); }
   section('seed state');
   check('bettertouchtool pre-installed', window.eval('byId("bettertouchtool").installed'));
   check('pre-installed has pending update', window.eval('byId("bettertouchtool").hasUpdate'));
-  check('update badge rendered', !!$('.side-badge'));
+  check('updates count shown on the Updates card', /\b1\b/.test($('.nav-card[data-nav="updates"]').textContent));
+  check('update tile is marked', !!$('.cell.has-update'));
 
   section('package detail');
-  click($('.cell[data-pkg="mesa"]'));
+  click($('.cell[data-pkg="mesa"] .aicon'));
   await wait(60);
   check('detail opened', $('#winTitle').textContent === 'Mesa3D for Intel HD 4000');
   check('hero icon rendered', !!$('.aicon.sz-128'));
   check('install button present', !!$('[data-act="install"]'));
-  check('4 tabs', $$('.tab').length === 4);
+  check('5 tabs', $$('.tab').length === 5, $$('.tab').length + '');
 
   click($('.tab[data-tab="changelog"]'));
   await wait(40);
@@ -112,6 +119,20 @@ function section(t) { console.log('\n' + t); }
   await wait(40);
   check('description tab renders spec', $$('.spec dt').length === 7, $$('.spec dt').length + '');
 
+  click($('.tab[data-tab="versions"]'));
+  await wait(40);
+  check('versions tab lists every version', $$('.pitem').length >= 3, $$('.pitem').length + '');
+  check('versions tab offers actions per version', $$('.pitem [data-act="pick-version"]').length >= 3,
+    $$('.pitem [data-act="pick-version"]').length + '');
+  check('versions tab labels a fresh install', /Install/.test($('#content').textContent));
+  click($('.pitem [data-act="pick-version"]'));
+  await wait(60);
+  check('version tab opens the install sheet', !!$('[data-act="do-install"]'));
+  click($('.sheet-foot [data-close]'));
+  await wait(40);
+  click($('.tab[data-tab="description"]'));
+  await wait(40);
+
   section('dependency resolution + install');
   click($('[data-act="install"]'));
   await wait(60);
@@ -122,7 +143,8 @@ function section(t) { console.log('\n' + t); }
   check('password warning shown for pkg', /password will be requested/i.test(planTxt));
   click($('[data-act="do-install"]'));
   await wait(300);
-  check('progress window open', /Installing/.test($('.sheet').textContent));
+  check('progress window open', /^(Install|Update|Downgrade|Reinstall)/.test($('.sheet').textContent.trim()),
+    $('.sheet').textContent.replace(/\s+/g,' ').trim().slice(0, 60));
   const stepText = $('#progStep').textContent;
   check('progress reports a step', stepText.length > 0, stepText);
   const mesaDone = await until(() => window.eval('byId("mesa").installed'));
@@ -138,14 +160,13 @@ function section(t) { console.log('\n' + t); }
   check('back returns to featured', $('#winTitle').textContent === 'Featured', $('#winTitle').textContent);
 
   section('kext install shows restart hint');
-  click($('.side-item[data-nav="installed"]'));
+  click($('.nav-card[data-nav="installed"]'));
   await wait(40);
   check('installed list non-empty', $$('.row[data-pkg]').length >= 4, $$('.row[data-pkg]').length + '');
   const updRow = $$('.row[data-pkg="bettertouchtool"]')[0];
   check('update row shows version jump', /1\.9\.9/.test(updRow.textContent) && /2\.0\.2/.test(updRow.textContent));
 
   section('remove with dependents blocked');
-  click($('.side-item[data-nav="search"]'));
   setVal($('#searchInput'), 'fakesmc');
   await wait(60);
   click($('.row[data-pkg="fakesmc"] .pill'));
@@ -157,7 +178,7 @@ function section(t) { console.log('\n' + t); }
     window.eval('byId("fakesmc").installed') && window.eval('byId("openscpx").installed'));
 
   section('remove flow');
-  click($('.side-item[data-nav="installed"]'));
+  click($('.nav-card[data-nav="installed"]'));
   await wait(50);
   const frow = $$('.row[data-pkg="fakesmc"]')[0];
   click(frow.querySelector('.pill'));
@@ -179,10 +200,10 @@ function section(t) { console.log('\n' + t); }
     'installed packages must never be autoremoved by an unrelated uninstall');
 
   section('sources');
-  click($('.side-item[data-nav="sources"]'));
+  click($('.nav-card[data-nav="sources"]'));
   await wait(50);
   check('sources page reachable from sidebar', $('#winTitle').textContent === 'Sources', $('#winTitle').textContent);
-  check('all sources listed', $$('.row[data-src]').length === 5, $$('.row[data-src]').length + '');
+  check('all sources listed', $$('.row[data-nav="source"]').length === 5, $$('.row[data-nav="source"]').length + '');
   check('broken source flagged', /unreachable/.test($('#content').textContent));
   check('error notice present', !!$('.notice.err'));
   click($('[data-act="add-source"]'));
@@ -198,8 +219,33 @@ function section(t) { console.log('\n' + t); }
   check('valid source added', window.eval('SOURCES').length === 6, window.eval('SOURCES').length + '');
   check('named from URL host', /mirror\.example\.org/.test(window.eval('SOURCES')[5].name));
 
+  section('remove source');
+  click($('.nav-card[data-nav="sources"]'));
+  await wait(60);
+  const before = window.eval('SOURCES.length');
+  const owned  = window.eval('PKGS.filter(p => p.source === "tcd-legacy" && p.installed).length');
+  const nFrom  = window.eval('PKGS.filter(p => p.source === "tcd-legacy").length');
+  click($('.row[data-sec="tcd-legacy"] [data-act="remove-source"]'));
+  await wait(60);
+  check('remove source asks first', !!$('[data-act="do-remove-source"]'));
+  check('remove sheet names the source', /TCD Legacy Archive/.test($('.sheet').textContent));
+  // the warning must reflect reality, not be sprinkled on unconditionally
+  check('remove sheet warns about installed packages only if there are any',
+    (owned > 0) === /already installed|are installed|is installed/.test($('.sheet').textContent),
+    'owned=' + owned);
+  click($('[data-act="do-remove-source"]'));
+  await wait(60);
+  check('source removed', window.eval('SOURCES.length') === before - 1,
+    before + ' -> ' + window.eval('SOURCES.length'));
+  check('its packages leave the listing', $$('.row[data-sec="tcd-legacy"]').length === 0);
+  check('other sources survive', $$('.row[data-nav="source"]').length === before - 1,
+    $$('.row[data-nav="source"]').length + '');
+  check('still on the Sources page', $('#winTitle').textContent === 'Sources');
+  check('installed packages are not uninstalled by removing a source',
+    window.eval('PKGS.filter(p => p.installed).length') > 0, nFrom + ' came from that source');
+
   section('settings / signing advisory');
-  click($('.side-item[data-nav="settings"]'));
+  click($('.nav-card[data-nav="settings"]'));
   await wait(50);
   const settingsTxt = $('#content').textContent;
   check('explains Gatekeeper problem', /Gatekeeper/.test(settingsTxt));
@@ -213,7 +259,6 @@ function section(t) { console.log('\n' + t); }
     'ad-hoc should add re-sign + commit steps');
 
   section('ad-hoc install runs the extra step');
-  click($('.side-item[data-nav="search"]'));
   setVal($('#searchInput'), 'bettertouchtool');
   await wait(60);
   check('pre-installed package offers Update', /Update/.test($('.row[data-pkg="bettertouchtool"]').textContent));
@@ -239,20 +284,75 @@ function section(t) { console.log('\n' + t); }
   check('bettertouchtool updated', window.eval('byId("bettertouchtool").pkgVersion') === '2.0.2');
   check('explicit target is not marked auto-installed', window.eval('byId("bettertouchtool").autoInstalled') === false);
 
-  section('categories');
-  click($('.side-item[data-nav="category"]'));
-  await wait(50);
-  check('category tiles render', $$('.cell[data-cat]').length === 6);
-  click($('.cell[data-cat="System"]'));
-  await wait(50);
-  check('category list opens', $('#winTitle').textContent === 'System', $('#winTitle').textContent);
-  check('category list has rows', $$('.row[data-pkg]').length === 5, $$('.row[data-pkg]').length + '');
-  click($('.side-item[data-nav="category"]'));
+
+  section('version disclosure menu');
+  // The blue triangle unfolds every version the source carries. This is the
+  // thing the concept sketch showed as "v1.0 / v2.0" with a fold-out.
+  await until(() => window.eval('byId("bettertouchtool").pkgVersion') === '2.0.2');
+  click($('.nav-card[data-nav="featured"]'));
+  await wait(60);
+  const bttCell = $$('.cell[data-pkg="bettertouchtool"]')[0];
+  check('installed-and-current tile exists', !!bttCell);
+  check('caret is not forced open when current', !bttCell.querySelector('.ver-caret').classList.contains('has-update'));
+
+  click(bttCell.querySelector('.ver-caret'));
+  await wait(60);
+  check('version menu opens', !!$('.popover'), 'no .popover');
+  check('menu lists multiple versions', $$('.ver-row').length >= 3, $$('.ver-row').length + ' versions');
+  check('menu names the package', /BetterTouchTool/.test($('.popover').textContent));
+  check('menu shows installed version', /v2\.0\.2/.test($('.popover').textContent));
+  check('current version is marked', !!$('.ver-row.current'));
+  check('other versions are labelled Reinstall or Update',
+    $$('.ver-row:not(.current) .rel').every(el => /Update|Reinstall|Downgrade/.test(el.textContent)),
+    $$('.ver-row:not(.current) .rel').map(e=>e.textContent).join(','));
+  check('menu offers a Details button', !!$('[data-act="pkg-detail"]'));
+
+  // pick an older version -> must read as a downgrade
+  const older = $$('.ver-row:not(.current)').pop();
+  const olderV = older.dataset.version;
+  const olderIsDowngrade = window.eval(`vcmp("${olderV}", byId("bettertouchtool").pkgVersion) < 0`);
+  click(older);
+  await wait(60);
+  check('picking a version opens the install sheet', !!$('[data-act="do-install"]'));
+  check('sheet carries the chosen version', $('[data-act="do-install"]').dataset.version === olderV,
+    $('[data-act="do-install"]').dataset.version + ' vs ' + olderV);
+  if (olderIsDowngrade){
+    check('older version is labelled Downgrade', /Downgrade/.test($('.sheet').textContent));
+    check('downgrade warning is shown', /This is a downgrade/.test($('.sheet').textContent));
+  } else {
+    check('newer version is labelled Update', /Update/.test($('.sheet').textContent));
+  }
+  check('version menu closed before the sheet opened', !$('.popover'));
+
+  click($('[data-act="do-install"]'));
+  await until(() => window.eval('byId("bettertouchtool").pkgVersion') === olderV);
+  check('store now sits on the chosen version', window.eval('byId("bettertouchtool").pkgVersion') === olderV,
+    window.eval('byId("bettertouchtool").pkgVersion') + ' vs ' + olderV);
+  check('a package behind its source is flagged updatable again',
+    window.eval('byId("bettertouchtool").hasUpdate') === true);
+
+  // and the tile advertises the route back up
+  click($('.nav-card[data-nav="featured"]'));
+  await wait(60);
+  check('tile shows the version journey',
+    new RegExp('v' + olderV.replace(/\./g, '\\.') + ' → v2\\.0\\.2').test($('.cell[data-pkg="bettertouchtool"]').textContent),
+    $('.cell[data-pkg="bettertouchtool"]').textContent.replace(/\s+/g,' ').trim());
+  check('tile is marked as having an update', $('.cell[data-pkg="bettertouchtool"]').classList.contains('has-update'));
+
+  // restore for the sections that follow
+  window.eval('byId("bettertouchtool").pkgVersion="2.0.2"; byId("bettertouchtool").hasUpdate=false; render();');
   await wait(40);
-  check('sidebar highlights category', $('.side-item[data-nav="category"]').classList.contains('active'));
+
+  section('categories');
+  click($('.nav-card[data-nav="categorylist"][data-sec="System"]'));
+  await wait(50);
+  check('category grid opens', $('#winTitle').textContent === 'System', $('#winTitle').textContent);
+  check('category grid has tiles', $$('.cell[data-pkg]').length === 5, $$('.cell[data-pkg]').length + '');
+  check('category card is highlighted', $('.nav-card[data-sec="System"]').classList.contains('active'));
+  check('category grid shows the blurb', /maintenance/i.test($('#content').textContent));
 
   section('update all');
-  click($('.side-item[data-nav="updates"]'));
+  click($('.nav-card[data-nav="updates"]'));
   await wait(50);
   // everything seeded as an update was already applied earlier in the run
   const nUpd = window.eval('PKGS.filter(p=>p.hasUpdate).length');
@@ -268,7 +368,6 @@ function section(t) { console.log('\n' + t); }
     window.eval("PKGS.filter(p=>p.hasUpdate).map(p=>p.id).join(',')"));
 
   section('search');
-  click($('.side-item[data-nav="search"]'));
   setVal($('#searchInput'), 'zzzznothing');
   await wait(60);
   check('empty state for no results', /No results/.test($('#content').textContent));
@@ -283,9 +382,14 @@ function section(t) { console.log('\n' + t); }
   setVal($('#searchInput'), '');
   await wait(60);
   check('clearing search returns to featured', $('#winTitle').textContent === 'Featured');
+  check('search box is present in the sidebar', !!$('#searchWrap'));
 
   section('per-source view');
-  click($('.side-item[data-nav="source"][data-sec="applejack"]'));
+  click($('.nav-card[data-nav="sources"]'));
+  await wait(60);
+  check('source rows are navigable', $$('.row[data-nav="source"]').length === SOURCES_len(),
+    $$('.row[data-nav="source"]').length + '');
+  click($('.row[data-sec="applejack"]'));
   await wait(50);
   check('source page opens', $('#winTitle').textContent === 'Applejack');
   check('source lists its packages', $$('.row[data-pkg]').length === 2, $$('.row[data-pkg]').length + '');

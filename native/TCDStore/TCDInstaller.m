@@ -25,6 +25,13 @@ static NSString *const kTCDPackageRoot     = @"/Library/Package Receipts";
 @property (nonatomic, assign) BOOL cancelledFlag;
 @end
 
+/* The verb shown in the window, and whether the user is being moved
+   backwards. A downgrade is allowed but warned about: files written by the
+   newer version are not cleaned up. */
+static NSString *TCDVerbForRelation(TCDVersionRelation r) {
+    return [TCDPackage stringForRelation:r];
+}
+
 @implementation TCDInstallSession
 
 - (NSArray *)steps { return self.mutableSteps; }
@@ -66,9 +73,8 @@ static NSString *const kTCDPackageRoot     = @"/Library/Package Receipts";
         [steps addObject:step];
     };
 
-    add(TCDInstallStageDownload,   @"Downloading…",   plan.packages.count == 1
-        ? [NSString stringWithFormat:@"%@", plan.packages.firstObject.downloadURLString]
-        : [NSString stringWithFormat:@"%lu packages", (unsigned long)plan.packages.count]);
+    add(TCDInstallStageDownload,   @"Downloading…", [NSString stringWithFormat:
+        @"%@ v%@", plan.packages.lastObject.name, plan.primaryVersion ?: plan.packages.lastObject.version]);
     add(TCDInstallStageVerify,     @"Verifying checksum…", @"SHA-256 against the source index");
     add(TCDInstallStageAuthorise,  @"Requesting authorisation…", @"Needed for system-level packages");
     add(TCDInstallStageInstall,    @"Installing…",    @"/usr/sbin/installer -target /");
@@ -83,10 +89,19 @@ static NSString *const kTCDPackageRoot     = @"/Library/Package Receipts";
 
 #pragma mark - install
 
+/* The verb the window opens with, so "Downgrade" is stated up front rather
+   than discovered halfway through. */
+- (NSString *)verbForPlan:(TCDInstallPlan *)plan {
+    return TCDVerbForRelation(plan.primaryRelation);
+}
+
 - (TCDInstallSession *)installPlan:(TCDInstallPlan *)plan {
     TCDInstallSession *session = [[TCDInstallSession alloc] init];
     session.mutableSteps = [self stepsForPlan:plan];
     session.primaryPackage = plan.packages.lastObject;
+    session.targetVersion = plan.primaryVersion;
+    session.relation      = plan.primaryRelation;
+    session.verb          = TCDVerbForRelation(plan.primaryRelation);
     session.installer = self;
 
     dispatch_async(self.work, ^{
@@ -226,8 +241,14 @@ static NSString *const kTCDPackageRoot     = @"/Library/Package Receipts";
     [self advance:session toStage:TCDInstallStageFinish];
     NSArray *primary = plan.primaryIdentifiers;
     for (TCDPackage *p in plan.packages) {
+        // A package sitting on something other than the newest version in its
+        // source is still updatable — that is the entire point of the version
+        // menu, and it has to survive a round trip through the database.
+        // -hasUpdate is derived from exactly this pair of strings, so no
+        // extra flag is needed to keep it correct after a downgrade.
+        NSString *landed = [overrides objectForKey:p.identifier] ?: p.version;
         p.installed = YES;
-        p.installedVersion = p.version;
+        p.installedVersion = landed;
         // Only packages the user actually asked for are eligible for
         // autoremove later; see TCDResolver -orphansAfterRemovingPackage:.
         p.autoInstalled = ![primary containsObject:p.identifier];

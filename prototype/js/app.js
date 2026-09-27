@@ -129,38 +129,36 @@ function renderSidebar(){
   const s = [];
 
   s.push(`<div class="side-head">Store</div>`);
-  s.push(sideItem('featured','star','Featured'));
-  s.push(sideItem('category','layers','Categories'));
-  s.push(sideItem('updates','download', 'Updates', nUpd ? `<span class="side-badge">${nUpd}</span>` : ''));
-  s.push(sideItem('search','search','Search'));
+  s.push(card('featured',  'star',     'Featured',  null));
+  s.push(card('updates',   'download', 'Updates',   nUpd ? String(nUpd) : null));
+  s.push(card('installed', 'archive',  'Installed', String(nIns)));
+  s.push(card('sources',   'server',   'Sources',   String(SOURCES.length)));
+  s.push(card('settings',  'gear',     'Settings',  null));
 
-  s.push(`<div class="side-head">Library</div>`);
-  s.push(sideItem('installed','archive','Installed', `<span class="side-count">${nIns}</span>`));
-
-  s.push(`<div class="side-head">Sources</div>`);
-  s.push(sideItem('sources','server','All Sources'));
-  SOURCES.forEach(function(src){
-    const active = state.route === 'source' && state.section === src.id;
-    s.push(`<div class="side-item src${active?' active':''}" data-nav="source" data-sec="${src.id}">
-      <span class="side-ico"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".9"/><circle cx="8" cy="6.5" r="1.7" fill="currentColor"/><circle cx="14" cy="12" r="1.7" fill="currentColor"/><circle cx="10" cy="17.5" r="1.7" fill="currentColor"/></svg></span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(src.name)}</span>
-      <span class="dot ${src.status}" title="${src.status}"></span>
+  s.push(`<div class="side-head">Categories</div>`);
+  CATEGORIES.forEach(function(c){
+    const n = PKGS.filter(p => p.section === c.key).length;
+    if (!n) return;
+    const g = ICON_DEFS[c.icon[0]], gl = GLYPHS[c.icon[1]] || GLYPHS.cube;
+    const active = state.route === 'categorylist' && state.section === c.key;
+    s.push(`<div class="nav-card${active ? ' active' : ''}" data-nav="categorylist" data-sec="${c.key}">
+      <span class="card-ico">${navGlyph(c.icon[1])}</span>
+      <span class="card-label">${c.key}</span>
+      <span class="card-sub">${n}</span>
     </div>`);
   });
 
-  s.push(`<div class="side-head">Store</div>`);
-  s.push(sideItem('settings','gear','Settings'));
-
   $('#sidebar').innerHTML = s.join('');
 }
-function sideItem(route, glyph, label, right){
-  return `<div class="side-item${state.route===route?' active':''}" data-nav="${route}">
-    <span class="side-ico">${navGlyph(glyph)}</span>
-    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>
-    ${right || ''}</div>`;
+function card(route, glyph, label, count){
+  return `<div class="nav-card${state.route === route ? ' active' : ''}" data-nav="${route}">
+    <span class="card-ico">${navGlyph(glyph)}</span>
+    <span class="card-label">${label}</span>
+    ${count ? `<span class="card-sub">${count}</span>` : ''}</div>`;
 }
+
 const NAV_G = {
-  star:`<svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2.2l3 6.3 6.9.9-5 4.8 1.3 6.8L12 17.8 5.8 21l1.3-6.8-5-4.8 6.9-.9z"/></svg>`,
+  star:`<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" stroke="none"><path d="M12 2.2l3 6.3 6.9.9-5 4.8 1.3 6.8L12 17.8 5.8 21l1.3-6.8-5-4.8 6.9-.9z"/></svg>`,
   layers:`<svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 2.4l9.5 4.9L12 12.2 2.5 7.3z" fill="currentColor" opacity=".4"/><path d="M2.5 12.2L12 17l9.5-4.8-9.5-4.8zM2.5 16.6L12 21.4l9.5-4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   download:`<svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2M4 19.5h16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   search:`<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="10.5" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15.2 15.2L20 20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`,
@@ -168,7 +166,12 @@ const NAV_G = {
   server:`<svg viewBox="0 0 24 24" width="15" height="15"><rect x="2.6" y="3.2" width="18.8" height="7" rx="1.8" fill="currentColor" opacity=".35"/><rect x="2.6" y="3.2" width="18.8" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2.6" y="13.8" width="18.8" height="7" rx="1.8" fill="currentColor" opacity=".35"/><rect x="2.6" y="13.8" width="18.8" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><g fill="currentColor"><circle cx="6" cy="6.7" r="1.15"/><circle cx="6" cy="17.3" r="1.15"/></g><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10.4 6.7h7M10.4 17.3h7"/></g></svg>`,
   gear:`<svg viewBox="0 0 24 24" width="15" height="15"><path d="M19.6 13.4a7.9 7.9 0 0 0 0-2.8l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-2.4-1.4l-.4-2.6h-4l-.4 2.6c-.9.3-1.7.8-2.4 1.4l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.8l-2 1.5 2 3.4 2.4-1c.7.6 1.5 1.1 2.4 1.4l.4 2.6h4l.4-2.6c.9-.3 1.7-.8 2.4-1.4l2.4 1 2-3.4z" fill="currentColor" opacity=".35"/><path d="M19.6 13.4a7.9 7.9 0 0 0 0-2.8l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-2.4-1.4l-.4-2.6h-4l-.4 2.6c-.9.3-1.7.8-2.4 1.4l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.8l-2 1.5 2 3.4 2.4-1c.7.6 1.5 1.1 2.4 1.4l.4 2.6h4l.4-2.6c.9-.3 1.7-.8 2.4-1.4l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="1.35"/><circle cx="12" cy="12" r="2.9" fill="currentColor"/></svg>`
 };
-function navGlyph(k){ return NAV_G[k] || ''; }
+/* Nav icons are the dark cards' own set; anything else falls back to the
+   package glyph set so a category can reuse its own icon. */
+function navGlyph(k){
+  if (NAV_G[k]) return NAV_G[k];
+  return GLYPHS[k] ? `<svg viewBox="0 0 24 24" width="15" height="15">${GLYPHS[k]}</svg>` : '';
+}
 
 /* ============================================================
    CONTENT ROUTER
@@ -263,15 +266,27 @@ function viewFeatured(){
   return `<div class="pad">
     <h1 class="sec-title">Featured</h1>
     <p class="sec-sub">Curated packages that still work on Lion, Mountain Lion and Mavericks.</p>
-    <div class="grid">${picks.map(p => cell(p, true)).join('')}</div>
+    <div class="grid">${picks.map(p => cell(p)).join('')}</div>
     <div class="group-title">Also worth a look</div>
     <div class="grid">${recent.map(p => cell(p)).join('')}</div>
   </div>`;
 }
-function cell(p, badge){
-  return `<div class="cell" data-pkg="${p.id}">${icon(p,64)}
+/* One tile in the large icon grid. The blue triangle in the corner is the
+   version disclosure — it unfolds a menu offering every version the source
+   carries, so you can install, update or roll back. */
+function cell(p){
+  const sub = p.hasUpdate ? 'v' + p.pkgVersion + ' → v' + p.version
+            : p.installed ? 'v' + p.pkgVersion
+            : 'v' + p.version;
+  const subCls = p.hasUpdate ? ' upd' : (p.installed ? ' inst' : '');
+  return `<div class="cell${p.hasUpdate ? ' has-update' : ''}" data-pkg="${p.id}">
+    <button class="ver-caret" data-act="versions" data-pkg="${p.id}"
+            title="Other versions of ${esc(p.name)}" aria-label="Other versions">
+      <svg viewBox="0 0 16 16" width="11" height="11"><path d="M3.5 6L8 10.5 12.5 6z" fill="currentColor"/></svg>
+    </button>
+    ${icon(p,128)}
     <div class="name">${esc(p.name)}</div>
-    <div class="sub">${badge ? '★ '.repeat(p.stars) : esc(typeLabel(p.type))}</div>
+    <div class="sub${subCls}">${sub}</div>
   </div>`;
 }
 
@@ -283,8 +298,8 @@ function viewCategory(){
       const n = PKGS.filter(p => p.section === c.key).length;
       const g = ICON_DEFS[c.icon[0]], gl = GLYPHS[c.icon[1]] || GLYPHS.cube;
       return `<div class="cell" data-cat="${c.key}">
-        <div class="aicon sz-64" style="background:linear-gradient(160deg,${g[0]},${g[1]});color:#fff">
-          <svg viewBox="0 0 24 24" width="34" height="34">${gl}</svg></div>
+        <div class="aicon sz-128" style="background:linear-gradient(160deg,${g[0]},${g[1]});color:#fff">
+          <svg viewBox="0 0 24 24" width="64" height="64">${gl}</svg></div>
         <div class="name">${c.key}</div><div class="sub">${n} package${n===1?'':'s'}</div></div>`;
     }).join('')}</div>
   </div>`;
@@ -292,11 +307,12 @@ function viewCategory(){
 
 function viewCategoryList(sec){
   sec = sec || state.section;
+  const meta = CATEGORIES.filter(c => c.key === sec)[0];
   const list = PKGS.filter(p => p.section === sec);
   return `<div class="pad">
     <h1 class="sec-title">${esc(sec)}</h1>
-    <p class="sec-sub">${list.length} package${list.length===1?'':'s'}.</p>
-    <div class="rows">${list.map(p => row(p)).join('')}</div>
+    <p class="sec-sub">${meta ? esc(meta.blurb) + ' ' : ''}${list.length} package${list.length===1?'':'s'}.</p>
+    <div class="grid">${list.map(p => cell(p)).join('')}</div>
   </div>`;
 }
 
@@ -366,12 +382,12 @@ function viewSources(){
     <div class="rows">${SOURCES.map(function(s){
       const n = PKGS.filter(p => p.source === s.id).length;
       const st = { ok:['<span class="status-dot ok"></span>','ok'], warn:['<span class="status-dot warn"></span>','degraded'], err:['<span class="status-dot err"></span>','unreachable'] }[s.status];
-      return `<div class="row" data-src="${s.id}">
+      return `<div class="row" data-nav="source" data-sec="${s.id}">
         <div class="aicon sz-28" style="background:linear-gradient(160deg,#9aa3b2,#5c6675);color:#fff"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="8" cy="6.5" r="1.7" fill="currentColor"/><circle cx="14" cy="12" r="1.7" fill="currentColor"/><circle cx="10" cy="17.5" r="1.7" fill="currentColor"/></svg></div>
         <div class="row-main"><div class="row-name">${esc(s.name)} ${s.kind==='official'?'<span class="tag tag-inst">Official</span>':''}</div>
         <div class="row-sub">${esc(s.url)}</div></div>
         <div class="row-right">${st[0]} <span style="font-size:12px;color:${s.status==='ok'?'var(--ink-3)':s.status==='err'?'var(--danger)':'var(--warn)'}">${st[1]}</span> <span style="font-size:12px;color:var(--ink-3)">· ${n} pkg</span>
-        <span class="pill ${s.status==='err'?'danger':''}">${s.status==='ok'?'Remove':'Edit'}</span></div></div>`;
+        <button class="pill${s.status==='err' ? ' danger' : ''}" data-act="remove-source" data-src="${s.id}">${s.status==='ok'?'Remove':'Edit'}</button></div></div>`;
     }).join('')}</div>
     <div style="margin-top:18px"><button class="btn" data-act="add-source">+ Add Source</button></div>
   </div>`;
@@ -471,6 +487,18 @@ function viewPackage(){
     body = p.changelog.length ? p.changelog.map(function(c){
       return `<div class="cl-item"><div class="cl-ver">${esc(c[0])}</div><div class="cl-date">${esc(c[1])}</div><div class="cl-txt">${esc(c[2])}</div></div>`;
     }).join('') : `<div class="prose" style="color:var(--ink-3)">The developer has not published a changelog for this package.</div>`;
+  } else if (tab === 'versions'){
+    body = `<div class="prose" style="margin-bottom:14px">This source carries ${p.versions.length} version${p.versions.length===1?'':'s'}. Installing an older one rolls the package back; your own files are not touched.</div>
+      <div class="plist">${newestFirst(p.versions).map(function(v){
+        const k = relationToInstalled(p, v);
+        const isCurrent = p.installed && v === p.pkgVersion;
+        const label = { new:'Install', update:'Update', downgrade:'Downgrade', reinstall:'Reinstall' }[k];
+        const cls = { new:'rel-new', update:'rel-update', downgrade:'rel-downgrade', reinstall:'rel-reinstall' }[k];
+        return `<div class="pitem">${icon(p,28)}
+          <div><div class="nm">v${esc(v)}</div><div class="vr">${isCurrent ? 'Currently installed' : esc(typeLabel(p.type)) + ' · ' + esc(p.developer)}</div></div>
+          ${isCurrent ? '<span class="tag tag-inst">Current</span>'
+            : `<button class="pill" data-act="pick-version" data-pkg="${p.id}" data-version="${esc(v)}">${label}</button>`}</div>`;
+      }).join('')}</div>`;
   } else {
     const deps = p.depends.map(byId).filter(Boolean);
     const conf = p.conflicts.map(byId).filter(Boolean);
@@ -501,6 +529,7 @@ function viewPackage(){
       <div class="tab ${tab==='description'?'active':''}" data-tab="description">Description</div>
       ${p.shots ? `<div class="tab ${tab==='shots'?'active':''}" data-tab="shots">Screenshots</div>` : ''}
       <div class="tab ${tab==='changelog'?'active':''}" data-tab="changelog">Changelog</div>
+      <div class="tab ${tab==='versions'?'active':''}" data-tab="versions">Versions (${p.versions.length})</div>
       <div class="tab ${tab==='deps'?'active':''}" data-tab="deps">Dependencies${p.depends.length?` (${p.depends.length})`:''}</div>
     </div>
     ${body}
@@ -569,6 +598,38 @@ function toast(msg, kind){
   setTimeout(() => { el.style.transition = 'opacity .3s, transform .3s'; el.style.opacity = 0; el.style.transform = 'translateY(6px)'; setTimeout(() => el.remove(), 320); }, 3200);
 }
 
+/* ---------- remove source sheet ---------- */
+function openRemoveSource(id){
+  const src = SOURCES.filter(x => x.id === id)[0];
+  if (!src) return;
+  const n = PKGS.filter(p => p.source === id).length;
+  const owned = PKGS.filter(p => p.source === id && p.installed).length;
+  overlay(`
+    <div class="scrim" data-close></div>
+    <div class="sheet" style="top:24%">
+      <div class="sheet-head"><div class="sheet-title">Remove ${esc(src.name)}?</div>
+        <div class="sheet-sub">${esc(src.url)}</div></div>
+      <div class="sheet-body">
+        <div class="prose" style="font-size:12.5px">${n} package${n===1?'':'s'} will disappear from the store. Nothing already downloaded or installed is touched.</div>
+        ${owned ? `<div class="notice" style="margin-top:12px"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.2l9.2 16H2.8z" fill="currentColor" opacity=".3"/><path d="M12 3.2l9.2 16H2.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9.5v5M12 17.2v.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          <div class="grow"><b>${owned} of them ${owned===1?'is':'are'} installed.</b> You can still remove the source — the installed copies stay, but the store will no longer know where updates come from.</div></div>` : ''}
+      </div>
+      <div class="sheet-foot">
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn destructive" data-act="do-remove-source" data-src="${id}">Remove Source</button>
+      </div>
+    </div>`);
+}
+function removeSource(id){
+  const i = SOURCES.findIndex(x => x.id === id);
+  if (i === -1) return;
+  const name = SOURCES[i].name;
+  SOURCES.splice(i, 1);
+  closeOverlay();
+  go('sources', { replace:true });
+  toast(`Removed ${name}`, 'ok');
+}
+
 /* ---------- add source sheet ---------- */
 function openAddSource(){
   const owner = newOwner('add-source');
@@ -613,30 +674,38 @@ function saveSource(owner){
 }
 
 /* ---------- confirm install ---------- */
-function openInstall(pkgId){
+function openInstall(pkgId, targetVersion){
   const p = byId(pkgId);
   const plan = resolvePlan(p);
   const conflicts = planConflicts(plan);
   const needsPriv = plan.some(x => x.type === 'pkg' || x.type === 'kext');
-  const isUpdate = !!p.hasUpdate;
+  const version = targetVersion || p.version;
+  const action = relationToInstalled(p, version);
+  const isDowngrade = action === 'downgrade';
+  const verb = { new:'Install', update:'Update', downgrade:'Downgrade', reinstall:'Reinstall' }[action];
 
   const owner = newOwner('install-confirm:' + p.id);
   overlay(`
     <div class="scrim" data-close data-owner="${owner}"></div>
     <div class="sheet" style="top:11%" data-owner="${owner}">
       <div class="sheet-head">
-        <div class="sheet-title">${isUpdate ? 'Update' : 'Install'} ${esc(plan.length > 1 ? plan.length + ' Packages' : p.name)}</div>
-        <div class="sheet-sub">${plan.length} package${plan.length===1?'':'s'} · ${bytes(plan.reduce((a,b)=>a+b.size,0))} total</div>
+        <div class="sheet-title">${verb} ${esc(plan.length > 1 ? plan.length + ' Packages' : p.name)}</div>
+        <div class="sheet-sub">${esc(p.name)} v${esc(version)}${p.installed && action !== 'reinstall' ? ' · currently v' + esc(p.pkgVersion) : ''} · ${bytes(p.size)}</div>
       </div>
       <div class="sheet-body">
         ${conflicts.length ? `<div class="notice err"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.2l9.2 16H2.8z" fill="currentColor" opacity=".3"/><path d="M12 3.2l9.2 16H2.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9.5v5M12 17.2v.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
           <div class="grow"><b>Conflict.</b> ${esc(p.name)} conflicts with ${conflicts.map(c=>c.other.name).join(', ')}, which ${conflicts.length>1?'are':'is'} installed. It must be removed first.</div></div>` : ''}
+        ${isDowngrade ? `<div class="notice"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.2l9.2 16H2.8z" fill="currentColor" opacity=".3"/><path d="M12 3.2l9.2 16H2.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9.5v5M12 17.2v.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          <div class="grow"><b>This is a downgrade.</b> You are on v${esc(p.pkgVersion)} and v${esc(version)} is older. Files added by the newer version may be left behind, and the package may not work.</div></div>` : ''}
         <div class="plist">${plan.map(function(x){
-          const tag = x.id === p.id
-            ? (isUpdate ? '<span class="tag tag-upd">Update</span>' : '<span class="tag tag-new">Install</span>')
-            : '<span class="tag tag-dep">Dependency</span>';
+          const isTarget = x.id === p.id;
+          const tag = !isTarget ? '<span class="tag tag-dep">Dependency</span>'
+            : action === 'update' ? '<span class="tag tag-upd">Update</span>'
+            : action === 'downgrade' ? '<span class="tag tag-dep">Downgrade</span>'
+            : action === 'reinstall' ? '<span class="tag tag-inst">Reinstall</span>'
+            : '<span class="tag tag-new">Install</span>';
           return `<div class="pitem">${icon(x,28)}
-            <div><div class="nm">${esc(x.name)}</div><div class="vr">${esc(x.version)} · ${esc(typeLabel(x.type))} · ${bytes(x.size)}</div></div>
+            <div><div class="nm">${esc(x.name)}</div><div class="vr">v${esc(isTarget ? version : x.version)} · ${esc(typeLabel(x.type))} · ${bytes(x.size)}</div></div>
             ${tag}</div>`;
         }).join('')}</div>
         ${needsPriv ? `<div class="notice" style="margin:14px 0 0"><svg viewBox="0 0 24 24" width="15" height="15"><rect x="4.4" y="10.2" width="15.2" height="11.4" rx="2.4" fill="currentColor" opacity=".3"/><rect x="4.4" y="10.2" width="15.2" height="11.4" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 10.2V7.6a4 4 0 0 1 8 0v2.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -644,8 +713,8 @@ function openInstall(pkgId){
       </div>
       <div class="sheet-foot">
         <button class="btn" data-close>Cancel</button>
-        <button class="btn primary" data-act="do-install" data-plan="${plan.map(x=>x.id).join(',')}" data-primary="${p.id}" ${conflicts.length?'disabled':''}>
-          ${isUpdate ? 'Update' : 'Install'}</button>
+        <button class="btn primary" data-act="do-install" data-plan="${plan.map(x=>x.id).join(',')}" data-primary="${p.id}" data-version="${esc(version)}" ${conflicts.length?'disabled':''}>
+          ${verb}</button>
       </div>
     </div>`, owner);
 }
@@ -677,16 +746,74 @@ function openRemove(pkgId){
     </div>`, owner);
 }
 
+
+/* ============================================================
+   version disclosure
+   The blue triangle on each tile unfolds a menu of every version the
+   source carries, Cydia-style. Pick one and the install sheet opens
+   for that exact version — which may be an update, a fresh install,
+   a reinstall, or a downgrade.
+   ============================================================ */
+function openVersionMenu(pkgId, caret){
+  const p = byId(pkgId);
+  if (!p) return;
+  const owner = newOwner('versions:' + p.id);
+  const versions = newestFirst(p.versions);
+  const rel = { new:'New', update:'Update', downgrade:'Downgrade', reinstall:'Reinstall' };
+  const relCls = { new:'rel-new', update:'rel-update', downgrade:'rel-downgrade', reinstall:'rel-reinstall' };
+
+  // Anchor to the tile, flipping to the other side if it would overflow.
+  const win = $('#window').getBoundingClientRect();
+  const r = caret.getBoundingClientRect();
+  const W = 238, PAD = 10;
+  let left = (r.right - win.left) - W + 8;
+  if (left < PAD) left = r.left - win.left + 8;
+  let top = (r.bottom - win.top) + 6;
+  const estimated = 64 + versions.length * 30 + 54;
+  if (top + estimated > win.height - PAD) top = Math.max(PAD, (r.top - win.top) - estimated - 6);
+
+  overlay(`
+    <div class="scrim" data-close data-owner="${owner}"></div>
+    <div class="popover" data-owner="${owner}" style="left:${Math.round(left)}px; top:${Math.round(top)}px">
+      <div class="popover-head">
+        <div style="width:22px;height:22px;flex:0 0 22px">${icon(p, 28).replace('class="aicon sz-28"', 'class="aicon sz-28" style="width:22px;height:22px;border-radius:5px"')}</div>
+        <div class="nm">${esc(p.name)}</div>
+        <div class="st">${p.installed ? 'v' + esc(p.pkgVersion) : 'not installed'}</div>
+      </div>
+      <div class="popover-sec">In ${esc(srcName(p.source))}</div>
+      ${versions.map(function(v){
+        const k = relationToInstalled(p, v);
+        const isCurrent = p.installed && v === p.pkgVersion;
+        return `<button class="ver-row${isCurrent ? ' current' : ''}"
+                  data-act="pick-version" data-pkg="${p.id}" data-version="${esc(v)}">
+          <span class="vr">v${esc(v)}</span>
+          <span class="rel ${isCurrent ? 'rel-current' : relCls[k]}">${isCurrent ? 'Current' : rel[k]}</span>
+        </button>`;
+      }).join('')}
+      <div class="popover-foot">
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn" data-act="pkg-detail" data-pkg="${p.id}">Details</button>
+      </div>
+    </div>`, owner);
+
+  const btn = document.querySelector('.ver-caret[data-pkg="' + p.id + '"]');
+  if (btn) btn.classList.add('open');
+}
+
 /* ---------- install progress ---------- */
 let installRun = null;   // { cancelled:bool } — one per in-flight run
 
-function runInstall(ids, primaryIds){
+function runInstall(ids, primaryIds, versionOverrides){
   const plan = ids.map(byId).filter(Boolean);
   const primary = (primaryIds || ids);
+  const overrides = versionOverrides || {};
+  const target = overrides[plan[0].id];
   const isUpdate = plan[0].hasUpdate;
+  const action = target ? relationToInstalled(plan[0], target) : (isUpdate ? 'update' : 'new');
+  const verb = { new:'Install', update:'Update', downgrade:'Downgrade', reinstall:'Reinstall' }[action];
   const steps = [
     { label:'Downloading…', w:[18,46,78,100], logs:[
-      'GET /pool/'+plan[0].id.toLowerCase()+'/'+plan[0].version+'.pkg',
+      'GET /pool/'+plan[0].id.toLowerCase()+'/'+(target || plan[0].version)+'.pkg',
       'HTTP/1.1 200 OK · ' + bytes(plan[0].size) + ' of ' + bytes(plan[0].size)] },
     { label:'Verifying checksum…', w:[0,34,100], logs:['sha256 ' + fakeHash(plan[0]), '<b>Checksum matches Packages index</b>'] },
     { label:'Requesting authorisation…', w:[0,60,100], logs:['SMJobBless — TCD Store Helper', 'AuthorizationCreate … user granted'] },
@@ -709,7 +836,7 @@ function runInstall(ids, primaryIds){
     <div class="scrim"></div>
     <div class="sheet prog-card" style="top:24%">
       <div class="sheet-head" style="padding-bottom:14px">
-        <div class="sheet-title">${isUpdate ? 'Updating' : 'Installing'} ${esc(plan.length>1 ? plan.length + ' packages' : plan[0].name)}</div>
+        <div class="sheet-title">${verb} ${esc(plan.length>1 ? plan.length + ' packages' : plan[0].name)}${target ? ' to v' + esc(target) : ''}</div>
       </div>
       <div class="sheet-body">
         <div class="prog-hero">${icon(plan[0],64)}
@@ -745,16 +872,20 @@ function runInstall(ids, primaryIds){
       setTimeout(() => {
         if (run.cancelled) return;
         plan.forEach(function(x){
+          const landed = overrides[x.id] || x.version;
           x.installed = true;
-          x.pkgVersion = x.version;
-          x.hasUpdate = false;
+          x.pkgVersion = landed;
+          // a package sitting on something other than the newest version in
+          // its source is still "updatable" — that is the whole point of the
+          // version menu
+          x.hasUpdate = (landed !== x.version);
           // anything pulled in only to satisfy a dependency is removable later
           x.autoInstalled = primary.indexOf(x.id) === -1;
         });
         if (installRun === run) installRun = null;
         closeOverlay(run.owner);
         render();
-        toast(isUpdate ? `Updated ${plan[0].name}` : `Installed ${plan[0].name}`, 'ok');
+        toast(`${verb} ${plan[0].name}` + (target ? ` to v${target}` : ''), 'ok');
         if (plan[0].type === 'kext') toast('Restart required to load the kernel extension');
       }, 320);
       return;
@@ -842,12 +973,44 @@ document.addEventListener('click', function(e){
     return;
   }
 
+  // An explicit control beats the container it sits in. A Remove button
+  // inside a navigable source row must remove the source, not navigate to it.
+  const act = e.target.closest('[data-act]');
+  if (act){
+    const a = act.dataset.act;
+    if (a === 'versions')        openVersionMenu(act.dataset.pkg, act);
+    else if (a === 'pkg-detail'){ closeOverlay(ownerOf(act)); go('pkg', { pkgId:act.dataset.pkg }); }
+    else if (a === 'pick-version'){
+      const v = act.dataset.version;
+      closeOverlay(ownerOf(act));
+      openInstall(act.dataset.pkg, v);
+    }
+    else if (a === 'install')    openInstall(act.dataset.pkg);
+    else if (a === 'remove')     openRemove(act.dataset.pkg);
+    else if (a === 'do-install'){
+      const ids = act.dataset.plan.split(',');
+      const overrides = {};
+      if (act.dataset.version) overrides[act.dataset.primary] = act.dataset.version;
+      closeOverlay(ownerOf(act));
+      runInstall(ids, [act.dataset.primary], overrides);
+    }
+    else if (a === 'do-remove'){ const p = byId(act.dataset.pkg); closeOverlay(ownerOf(act)); runRemove(p); }
+    else if (a === 'add-source')openAddSource();
+    else if (a === 'remove-source'){ const id = act.dataset.src; closeOverlay(ownerOf(act)); openRemoveSource(id); }
+    else if (a === 'do-remove-source'){ removeSource(act.dataset.src); }
+    else if (a === 'save-source')saveSource(ownerOf(act));
+    else if (a === 'retry-src')  runRefresh();
+    else if (a === 'refresh-all')runRefresh();
+    else if (a === 'update-all') runUpdateAll();
+    return;
+  }
+
   const nav = e.target.closest('[data-nav]');
   if (nav){
-    const r = nav.dataset.nav, s = nav.dataset.sec;
+    const r = nav.dataset.nav, sec = nav.dataset.sec;
     if (r === 'featured')  go('featured', { replace:true });
     else if (r === 'category') go('category', { replace:true });
-    else if (r === 'source')   go('source', { section:s, replace:true });
+    else if (r === 'source' || r === 'categorylist') go(r, { section:sec, replace:true });
     else go(r, { replace:true });
     return;
   }
@@ -855,27 +1018,10 @@ document.addEventListener('click', function(e){
   if (cat){ go('categorylist', { section:cat.dataset.cat, replace:true }); return; }
 
   const pkgEl = e.target.closest('[data-pkg]');
-  const act  = e.target.closest('[data-act]');
+  if (pkgEl){ go('pkg', { pkgId:pkgEl.dataset.pkg }); return; }
 
-  if (pkgEl && !act && !e.target.closest('.pill,[data-act]')){
-    go('pkg', { pkgId:pkgEl.dataset.pkg });
-    return;
-  }
   const tab = e.target.closest('[data-tab]');
   if (tab){ go('pkg', { pkgId:state.pkgId, tab:tab.dataset.tab, keepTab:true }); return; }
-
-  if (!act) return;
-  const a = act.dataset.act;
-
-  if (a === 'install')        openInstall(act.dataset.pkg);
-  else if (a === 'remove')    openRemove(act.dataset.pkg);
-  else if (a === 'do-install'){ const ids = act.dataset.plan.split(','); closeOverlay(ownerOf(act)); runInstall(ids, [act.dataset.primary]); }
-  else if (a === 'do-remove'){ const p = byId(act.dataset.pkg); closeOverlay(ownerOf(act)); runRemove(p); }
-  else if (a === 'add-source')openAddSource();
-  else if (a === 'save-source')saveSource(ownerOf(act));
-  else if (a === 'retry-src'){ runRefresh(); }
-  else if (a === 'refresh-all')runRefresh();
-  else if (a === 'update-all')runUpdateAll();
 });
 
 function runRemove(p){
