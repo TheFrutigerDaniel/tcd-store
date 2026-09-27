@@ -85,6 +85,11 @@ typedef NS_ENUM(NSInteger, TCDVersionRelation) {
 /* install / update / downgrade / reinstall, relative to what is on disk. */
 - (TCDVersionRelation)relationToVersion:(NSString *)version;
 
+/* The verb for a relation: "Install" / "Update" / "Downgrade" / "Reinstall".
+   The same word is used in the version menu, in the confirm sheet and in the
+   install log, so a run reads consistently from end to end. */
++ (NSString *)stringForRelation:(TCDVersionRelation)relation;
+
 - (BOOL)isSystemLevel;
 - (NSString *)localizedSizeString;
 - (NSString *)localizedTypeString;

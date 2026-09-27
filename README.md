@@ -112,7 +112,21 @@ cd native && make FLOOR=10.7
 ```
 
 Objective-C, ARC, `posix_spawn` instead of `NSTask`, `NSURLConnection` instead
-of `NSURLSession`, frames instead of `NSStackView`. The reasoning for each 10.7
+of `NSURLSession`, frames instead of `NSStackView`, and a hand-laid grid instead
+of `NSCollectionView`.
+
+The window is the approved design, not a table view standing in for it:
+`TCDTheme` carries every colour and metric transcribed from the CSS,
+`TCDAeroBar` is the single black bar holding the wordmark, the Store/Downloads
+pills and the search field, `TCDSidebar` is the black panel with the density
+control, `TCDStoreGrid` is the large-icon grid at 3, 4 or 5 per row, and
+`TCDDownloadsView` is the queue and history. An install is a row in that queue,
+driven by the engine's own `stepChanged` and `logLine` callbacks — there is no
+progress window.
+
+The screens are plain `NSView`s rather than `NSViewController`s: on 10.7
+`NSViewController` has no lifecycle until 10.10, so `-viewDidLoad` is not
+available. The reasoning for each 10.7
 constraint is in `docs/ARCHITECTURE.md`.
 
 One thing to know before you start: **Xcode 15+ will not target 10.7** — it

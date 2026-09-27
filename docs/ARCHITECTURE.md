@@ -45,7 +45,14 @@ TCDInstaller       plan -> download, verify, install, re-sign, commit
 TCDAuthorizer      root, via AuthorizationExecuteWithPrivileges or SMJobBless
 TCDSigner          signing policy; opt-in (default) or ad-hoc re-sign
 TCDProcessRunner   posix_spawn wrapper; the only place that runs a tool
-TCDAppDelegate     window, source list, content table, install wiring
+
+TCDTheme           the design tokens, transcribed from prototype/css/app.css
+TCDAeroBar         the one black bar: wordmark, Store|Downloads, search
+TCDSidebar         the black Store panel, including the density control
+TCDStoreGrid       the large-icon grid, 3/4/5 per row
+TCDStoreView       the Store screen: sidebar + grid, and the routing
+TCDDownloadsView   Downloads: the live queue and the history below it
+TCDAppDelegate     the window, the top-level switch, and the install wiring
 ```
 
 Data flows one way: an index is parsed into `TCDPackage`s, which the database
@@ -56,15 +63,23 @@ Nothing reads back up the chain.
 
 | Prototype screen | Native |
 |---|---|
-| Dark card sidebar (Store group + Categories group) | `NSOutlineView` in `TCDAppDelegate` |
-| Large icon grid | `NSTableView`, `-installPackage:` from a double-click |
-| Blue triangle version disclosure | `TCDPackage.availableVersions` + `-relationToVersion:` |
-| Package detail, Versions tab | `-planForPackage:atVersion:` |
+| The one black bar | `TCDAeroBar`, a single view holding both lines |
+| Store \| Downloads pills | `-aeroBar:didSelectView:`, one view shown at a time |
+| Black panel (Store rows, View, Categories) | `TCDSidebar`, rows laid out by hand |
+| Icon density (3 / 4 / 5 per row) | `TCDSidebar`'s View group → `-setDensity:` on `TCDStoreGrid` |
+| Large icon grid | `TCDStoreGrid`, one view per tile |
+| Blue triangle version disclosure | `-presentVersionMenuForPackage:`, over `availableVersions` + `-relationToVersion:` |
+| Install confirm sheet | `TCDInstallPlan` rendered directly — the sheet **is** the plan |
+| Install progress | `TCDTransfer` wrapping `TCDInstallSession` — a row, not a window |
+| Downloads queue | `TCDDownloadsView`, fed by the session's `stepChanged` / `logLine` |
+| Downloads history | `TCDHistoryEntry`, written when a run lands |
 | Package detail, Dependencies tab | `TCDResolver`, `-removalBlockersForPackage:` |
 | Sources list + Add / Remove | `-addSource:`, `-removeSourceWithIdentifier:` |
-| Install confirm sheet | `TCDInstallPlan` rendered directly — the sheet **is** the plan |
-| Install progress | `TCDInstallSession`, one `TCDInstallStep` per stage |
 | Settings → signing | `TCDSigner` |
+
+`TCDStoreView` and `TCDDownloadsView` are plain `NSView`s, not
+`NSViewController`s. `NSViewController` exists on 10.7 but has no lifecycle
+until 10.10, so `-viewDidLoad` is unavailable and the indirection buys nothing.
 
 ## Version disclosure
 
@@ -179,6 +194,14 @@ Stated plainly so nobody assumes it exists:
 - **Rollback.** An install that half-completes leaves a mess and says so. A
   transactional installer that snapshots the receipt payload first is the right
   fix and is not written.
+- **The package detail screen.** The grid opens the plan sheet directly, so
+  there is no detail window with tabs, screenshots, changelog and permissions
+  yet. The plan sheet already carries the dependency list and the conflicts,
+  which is the part that decides anything.
+- **The Sources and Settings screens.** Both are still sheets, not screens of
+  their own; the sidebar rows are present and route to the shell.
+- **Icon artwork.** Tiles draw a gradient plate rather than fetching
+  `iconURLString`. The layout is final; the pictures are not.
 - **The privileged helper.** `TCDAuthorizer` implements the
   `AuthorizationExecuteWithPrivileges` path fully. The `SMJobBless` path is a
   stub, because it only matters under the ad-hoc signing policy (see
