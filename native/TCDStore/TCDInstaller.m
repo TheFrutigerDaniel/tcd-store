@@ -23,6 +23,16 @@ static NSString *const kTCDPackageRoot     = @"/Library/Package Receipts";
 @property (nonatomic, strong) NSMutableArray *mutableSteps;
 @property (nonatomic, weak)   TCDInstaller *installer;
 @property (nonatomic, assign) BOOL cancelledFlag;
+
+// readonly in the public header because callers observe rather than set these;
+// the installer is the only writer, so they are reopened here rather than
+// being made settable to everyone.
+@property (nonatomic, strong) TCDPackage        *primaryPackage;
+@property (nonatomic, copy)   NSString          *targetVersion;
+@property (nonatomic, assign) TCDVersionRelation relation;
+@property (nonatomic, copy)   NSString          *verb;
+@property (nonatomic, copy)   NSString          *failureReason;
+@property (nonatomic, assign) BOOL               finished;
 @end
 
 /* The verb shown in the window, and whether the user is being moved
@@ -43,7 +53,10 @@ static NSString *TCDVerbForRelation(TCDVersionRelation r) {
 @interface TCDInstaller ()
 @property (nonatomic, strong) TCDAuthorizer *authorizer;
 @property (nonatomic, strong) TCDSigner    *signer;
-@property (nonatomic, strong) dispatch_queue_t work;
+// not strong: with the 10.9 SDK dispatch_queue_t is a plain pointer type, not
+// an Objective-C object, so ARC has nothing to retain. Held assign and
+// released in -dealloc, which is what 10.7 wants regardless.
+@property (nonatomic, assign) dispatch_queue_t work;
 - (BOOL)installOnePackage:(TCDPackage *)p
                  fromPath:(NSString *)path
                      log:(void (^)(NSString *line, BOOL isError))log
@@ -60,6 +73,13 @@ static NSString *TCDVerbForRelation(TCDVersionRelation r) {
         _work = dispatch_queue_create("dev.tcd-store.install", DISPATCH_QUEUE_SERIAL);
     }
     return self;
+}
+
+- (void)dealloc {
+    // ARC does not touch dispatch objects in this SDK, so the serial queue
+    // created in -init is released by hand.
+    if (_work) dispatch_release(_work);
+    _work = NULL;
 }
 
 #pragma mark - step list
@@ -241,6 +261,7 @@ static NSString *TCDVerbForRelation(TCDVersionRelation r) {
     // ---- commit -------------------------------------------------------
     [self advance:session toStage:TCDInstallStageFinish];
     NSArray *primary = plan.primaryIdentifiers;
+    NSDictionary *overrides = plan.versionOverrides;
     for (TCDPackage *p in plan.packages) {
         // A package sitting on something other than the newest version in its
         // source is still updatable — that is the entire point of the version
