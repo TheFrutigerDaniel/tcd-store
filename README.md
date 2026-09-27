@@ -41,7 +41,13 @@ and no light strip. The gradient ramps across the whole bar, the wordmark line
 on its light top, the search line into its dark bottom.
 
 The **sidebar is scoped to Store**: rows for Featured, Updates, Installed,
-Sources and Settings, then the category cards. It is **black with white text** —
+Sources and Settings, then a **View** group, then the category cards.
+
+That View group is the **icon-density control** — three Finder-style grid
+glyphs, Large / Medium / Small, moving the grid between 3, 4 and 5 tiles per
+row and the icons between 128, 96 and 64px together. Medium (4 across) is the
+default. The choice holds across every screen, and it disappears on Downloads,
+which has no sidebar and no tiles. It is **black with white text** —
 the earlier periwinkle-on-black read as muddy, so the panel is neutral black and
 the single blue accent is the Update All button plus a blue tick on the row you
 are on. **Downloads is a full-width screen with no sidebar.**
@@ -89,12 +95,13 @@ cd prototype && python3 serve.py 8080 &
 node test/verify.js
 ```
 
-219 assertions covering every screen, the dependency resolver, the version
+244 assertions covering every screen, the dependency resolver, the version
 disclosure and downgrade path, both signing policies, the orphan rules, the
 source flows, the top-level Store/Downloads switch, an install observed
 mid-flight on the Downloads queue (including cancelling it and proving the
-timers actually stop), the black-panel palette, and the single black bar
-(structural assertions, since jsdom has no layout engine). It runs the prototype's real
+timers actually stop), the black-panel palette, the single black bar
+(structural assertions, since jsdom has no layout engine), and the icon-density
+control. It runs the prototype's real
 scripts in a real DOM, so it catches runtime errors rather than just checking
 that markup exists.
 

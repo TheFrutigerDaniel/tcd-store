@@ -70,11 +70,15 @@ function section(t) { console.log('\n' + t); }
 
   section('boot');
   check('sidebar rendered as dark cards', $$('.nav-card').length > 5, $$('.nav-card').length + ' cards');
-  check('sidebar groups are Store then Categories', $$('.side-head').length === 2, $$('.side-head').length + '');
+  check('sidebar groups are Store, View, Categories',
+    $$('.side-head').map(h => h.textContent).join(' > ') === 'Store > View > Categories',
+    $$('.side-head').map(h => h.textContent).join(' > '));
   check('category cards present', $$('.nav-card[data-nav="categorylist"]').length === 6,
     $$('.nav-card[data-nav="categorylist"]').length + '');
   check('featured grid populated', $$('.cell[data-pkg]').length >= 8, $$('.cell[data-pkg]').length + '');
-  check('tiles use large icons', $$('.cell .aicon.sz-128').length >= 8);
+  // icon size follows the density, and the default is medium (96px)
+  check('tile icons match the current density', $$('.cell .aicon.sz-96').length >= 8,
+    $$('.cell .aicon.sz-96').length + ' tiles at 96px');
   check('every tile has a version disclosure', $$('.cell .ver-caret').length === $$('.cell[data-pkg]').length);
   check('window title set', $('#winTitle').textContent === 'Featured', $('#winTitle').textContent);
   check('status bar shows sources', /source/.test($('#statusbar').textContent));
@@ -421,6 +425,59 @@ function section(t) { console.log('\n' + t); }
   check('history row says Remove', /Remove/.test($('.hist-row').textContent));
   check('the package is uninstalled', !window.eval('byId("caffeine").installed'));
 
+
+
+  section('icon density is adjustable');
+  window.eval('setView("store"); go("featured",{replace:true})');
+  await wait(80);
+  check('a density control exists in the sidebar', $$('.side-seg-btn').length === 3,
+    $$('.side-seg-btn').length + ' buttons');
+  check('it is grouped under a View heading', /View/.test($('.sidebar').textContent));
+  check('the default is 4 per row', window.eval('state.density') === 'medium', window.eval('state.density'));
+  check('the grid is 4 across by default', $('.grid').classList.contains('cols-4'), $('.grid').className);
+  check('the default icon is 96px', !!$('.cell .aicon.sz-96'), $('.cell .aicon').className);
+  check('each button shows its own grid glyph', $$('.side-seg-btn svg').length === 3);
+  check('the 5-across option is offered', !!$('[data-density="small"]'));
+  check('the pressed option is marked', $('[data-density="medium"]').getAttribute('aria-pressed') === 'true');
+  check('the unpressed options are not', $('[data-density="large"]').getAttribute('aria-pressed') === 'false');
+
+  const colsOf = () => $('.grid').className.match(/cols-(\d+)/)[1];
+  const iconOf = () => $('.cell .aicon').className.match(/sz-(\d+)/)[1];
+
+  click($('[data-density="small"]'));  await wait(80);
+  check('small gives 5 per row', colsOf() === '5', colsOf());
+  check('small uses 64px icons', iconOf() === '64', iconOf());
+  check('the 5-across button is now pressed', $('[data-density="small"]').getAttribute('aria-pressed') === 'true');
+  check('the previous choice is released', $('[data-density="medium"]').getAttribute('aria-pressed') === 'false');
+  check('all tiles shrank together', $$('.cell .aicon.sz-64').length === $$('.cell').length,
+    $$('.cell .aicon.sz-64').length + ' of ' + $$('.cell').length);
+
+  click($('[data-density="large"]'));  await wait(80);
+  check('large gives 3 per row', colsOf() === '3', colsOf());
+  check('large uses 128px icons', iconOf() === '128', iconOf());
+
+  click($('[data-density="medium"]')); await wait(80);
+  check('medium is back to 4 across', colsOf() === '4', colsOf());
+  // Updates renders rows rather than tiles, so check the model there
+  click($('.nav-card[data-nav="updates"]')); await wait(80);
+  check('the choice survives navigating to a list screen', window.eval('state.density') === 'medium');
+  click($('.nav-card[data-nav="categorylist"]')); await wait(80);
+  check('the choice survives opening a category', colsOf() === '4', colsOf());
+  check('the choice survives a package detail',
+    (click($('.cell[data-pkg] .aicon')), await wait(80), window.eval('state.density')) === 'medium');
+  click($('.nav-card[data-nav="featured"]')); await wait(80);
+  check('the version triangle is still there after a density change', !!$('.cell .ver-caret'));
+  check('and it is still blue', cs($('.cell .ver-caret')).backgroundColor === 'rgb(74, 144, 226)',
+    cs($('.cell .ver-caret')).backgroundColor);
+  // Downloads has no sidebar at all, so the control cannot be used there
+  click($('.aero-pill[data-view="downloads"]')); await wait(80);
+  check('the density control is off-screen on Downloads', cs($('#sidebar')).display === 'none',
+    cs($('#sidebar')).display);
+  click($('.aero-pill[data-view="store"]')); await wait(80);
+  check('and it comes back with the sidebar', $$('.side-seg-btn').length === 3);
+  // the columns must be a real declaration, not just a class name
+  const declared = cs($('.grid')).gridTemplateColumns;
+  check('the browser resolves the column count', /repeat\(4,/.test(declared), declared);
 
   section('the toolbar and search are one black bar');
   const chrome = $('.aero-chrome');

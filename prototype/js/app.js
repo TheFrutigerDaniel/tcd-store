@@ -42,6 +42,25 @@ function srcName(id){
    files into HISTORY when it lands, so this screen is a readout of
    real state rather than a decoration.
    ============================================================ */
+/* Icon density. The grid is a Store concern, so the control lives in the
+   Store sidebar; the columns and the icon size always move together. */
+const DENSITY = {
+  large:  { cols:3, icon:128, name:'Large'  },
+  medium: { cols:4, icon:96,  name:'Medium' },
+  small:  { cols:5, icon:64,  name:'Small'  }
+};
+const DENSITY_ORDER = ['large', 'medium', 'small'];
+function density(){ return DENSITY[state.density] || DENSITY.medium; }
+/* Finder-style grid glyph: n columns of little squares */
+function densityGlyph(cols){
+  const rows = 2, s = 5, gap = 1.5, w = cols * s + (cols - 1) * gap;
+  let r = '';
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++)
+      r += `<rect x="${(x * (s + gap)).toFixed(1)}" y="${(y * (s + gap)).toFixed(1)}" width="${s}" height="${s}" rx="1"/>`;
+  return `<svg viewBox="0 0 ${w} ${rows * s + (rows - 1) * gap}" width="13" height="${rows * s + (rows - 1) * gap}" fill="currentColor" aria-hidden="true">${r}</svg>`;
+}
+
 const TRANSFERS = [];   // { key, name, version, verb, step, fraction, pkgs, logs }
 const HISTORY   = [];   // { name, version, verb, when }
 const STEP_LOG  = [];   // every distinct step the engine announces, in order
@@ -57,6 +76,7 @@ function relTime(d){
 /* ---------------- state ---------------- */
 const state = {
   view: 'store',          // store | downloads — the top-level pill
+  density: 'medium',      // large | medium | small
   route: 'featured',     // featured | category | updates | installed | search | sources | settings | pkg
   section: null,
   pkgId: null,
@@ -155,6 +175,15 @@ function renderSidebar(){
   s.push(card('sources',   'server',   'Sources',   String(SOURCES.length)));
   s.push(card('settings',  'gear',     'Settings',  null));
 
+  s.push(`<div class="side-head">View</div>`);
+  s.push(`<div class="side-seg" role="group" aria-label="Icon size">` +
+    DENSITY_ORDER.map(function(k){
+      const on = state.density === k;
+      return `<button class="side-seg-btn${on ? ' active' : ''}" data-density="${k}"
+        aria-pressed="${on ? 'true' : 'false'}" title="${DENSITY[k].name} — ${DENSITY[k].cols} per row">
+        ${densityGlyph(DENSITY[k].cols)}</button>`;
+    }).join('') + `</div>`);
+
   s.push(`<div class="side-head">Categories</div>`);
   CATEGORIES.forEach(function(c){
     const n = PKGS.filter(p => p.section === c.key).length;
@@ -222,6 +251,13 @@ function setView(view, force){
   }
   $('#content').scrollTop = 0;
   render();
+}
+
+function setDensity(d){
+  if (!DENSITY[d] || state.density === d) return;
+  state.density = d;
+  render();
+  toast(`${DENSITY[d].name} icons — ${DENSITY[d].cols} per row`);
 }
 
 function go(route, opts){
@@ -317,9 +353,9 @@ function viewFeatured(){
   return `<div class="pad">
     <h1 class="sec-title">Featured</h1>
     <p class="sec-sub">Curated packages that still work on Lion, Mountain Lion and Mavericks.</p>
-    <div class="grid">${picks.map(p => cell(p)).join('')}</div>
+    <div class="grid cols-${density().cols}">${picks.map(p => cell(p)).join('')}</div>
     <div class="group-title">Also worth a look</div>
-    <div class="grid">${recent.map(p => cell(p)).join('')}</div>
+    <div class="grid cols-${density().cols}">${recent.map(p => cell(p)).join('')}</div>
   </div>`;
 }
 /* One tile in the large icon grid. The blue triangle in the corner is the
@@ -335,7 +371,7 @@ function cell(p){
             title="Other versions of ${esc(p.name)}" aria-label="Other versions">
       <svg viewBox="0 0 16 16" width="11" height="11"><path d="M3.5 6L8 10.5 12.5 6z" fill="currentColor"/></svg>
     </button>
-    ${icon(p,128)}
+    ${icon(p, density().icon)}
     <div class="name">${esc(p.name)}</div>
     <div class="sub${subCls}">${sub}</div>
   </div>`;
@@ -345,7 +381,7 @@ function viewCategory(){
   return `<div class="pad">
     <h1 class="sec-title">Categories</h1>
     <p class="sec-sub">${PKGS.length} packages across ${CATEGORIES.length} categories.</p>
-    <div class="grid">${CATEGORIES.map(function(c){
+    <div class="grid cols-${density().cols}">${CATEGORIES.map(function(c){
       const n = PKGS.filter(p => p.section === c.key).length;
       const g = ICON_DEFS[c.icon[0]], gl = GLYPHS[c.icon[1]] || GLYPHS.cube;
       return `<div class="cell" data-cat="${c.key}">
@@ -363,7 +399,7 @@ function viewCategoryList(sec){
   return `<div class="pad">
     <h1 class="sec-title">${esc(sec)}</h1>
     <p class="sec-sub">${meta ? esc(meta.blurb) + ' ' : ''}${list.length} package${list.length===1?'':'s'}.</p>
-    <div class="grid">${list.map(p => cell(p)).join('')}</div>
+    <div class="grid cols-${density().cols}">${list.map(p => cell(p)).join('')}</div>
   </div>`;
 }
 
@@ -1158,6 +1194,9 @@ document.addEventListener('click', function(e){
 
   const viewBtn = e.target.closest('[data-view]');
   if (viewBtn){ setView(viewBtn.dataset.view); return; }
+
+  const densBtn = e.target.closest('[data-density]');
+  if (densBtn){ setDensity(densBtn.dataset.density); return; }
 
   const nav = e.target.closest('[data-nav]');
   if (nav){
