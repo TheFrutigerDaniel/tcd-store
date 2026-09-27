@@ -392,7 +392,8 @@ static NSString *const kSelectColumns =
     [self bindText:"x" index:1 value:source[@"identifier"]];
     [self bindText:"x" index:2 value:source[@"name"]];
     [self bindText:"x" index:3 value:source[@"url"]];
-    [self bindText:"x" index:4 value:source[@"kind"] ?: @"third-party"];
+    NSString *kind = source[@"kind"] ?: @"third-party";
+    [self bindText:"x" index:4 value:kind];
     sqlite3_bind_double(_db, 5, [[NSDate date] timeIntervalSince1970]);
     sqlite3_step(st);
     sqlite3_finalize(st);

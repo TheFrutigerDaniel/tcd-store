@@ -32,7 +32,7 @@
     NSArray *rawLines = [text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     NSMutableDictionary *fields = [NSMutableDictionary dictionary];
     NSMutableString *description = [NSMutableString string];
-    NSString *lastKey = nil;
+    __block NSString *lastKey = nil;   // reassigned inside flush()
 
     void (^flush)(void) = ^{
         if (fields.count) {
@@ -92,24 +92,26 @@
    current metadata. */
 + (NSArray *)mergeStanzas:(NSArray *)stanzas {
     NSMutableArray *ordered = [NSMutableArray array];
-    NSMutableDictionary *seen = [NSMutableDictionary dictionary];
+    NSMutableDictionary *heads = [NSMutableDictionary dictionary];
+    NSMutableDictionary *entriesByID = [NSMutableDictionary dictionary];
 
     for (TCDPackage *p in stanzas) {
-        TCDPackage *head = [seen objectForKey:p.identifier];
+        NSString *key = p.identifier;
+        TCDPackage *head = [heads objectForKey:key];
         if (!head) {
-            [seen setObject:p forKey:p.identifier];
+            // the first sighting of a Package is the newest, so it is the one
+            // the store shows and the one that owns the version list
+            [heads setObject:p forKey:key];
+            [entriesByID setObject:[NSMutableArray array] forKey:key];
             [ordered addObject:p];
+            head = p;
         }
-    }
-    for (TCDPackage *p in stanzas) {
-        TCDPackage *head = [seen objectForKey:p.identifier];
-        NSDictionary *entry = [NSDictionary dictionaryWithObjectsAndKeys:
+        NSMutableArray *entries = [entriesByID objectForKey:key];
+        [entries addObject:[NSDictionary dictionaryWithObjectsAndKeys:
             p.version,          @"version",
             [NSNumber numberWithUnsignedLongLong:p.sizeBytes], @"sizeBytes",
             p.sha256 ?: @"",    @"sha256",
-            p.downloadURLString ?: @"", @"downloadURLString", nil];
-        // the first sighting is the newest, so it lands at the head
-        [head.availableVersions insertObject:entry atIndex:0];
+            p.downloadURLString ?: @"", @"downloadURLString", nil]];
 
         if ([TCDPackage compareVersion:p.version toVersion:head.version] > 0) {
             // shouldn't happen given the sort below, but stay correct if it does
@@ -119,11 +121,18 @@
             head.sizeBytes = p.sizeBytes;
         }
     }
+
+    // availableVersions is an NSArray, so the accumulation stayed local and
+    // the finished newest-first list is assigned here in one go. The sort also
+    // makes insertion order irrelevant, which is what the old code was reaching
+    // for by inserting each entry at index 0.
     for (TCDPackage *head in ordered) {
-        [head.availableVersions sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
-            return [TCDPackage compareVersion:[b objectForKey:@"version"]
-                                     toVersion:[a objectForKey:@"version"]];
-        }];
+        [head setAvailableVersions:
+            [[entriesByID objectForKey:head.identifier] sortedArrayUsingComparator:
+                ^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+                    return [TCDPackage compareVersion:[b objectForKey:@"version"]
+                                             toVersion:[a objectForKey:@"version"]];
+                }]];
     }
     return ordered;
 }
@@ -148,12 +157,24 @@
     p.changelog          = f[@"TCD-Changelog"];
     p.iconURLString      = f[@"TCD-Icon"];
     p.downloadURLString  = f[@"Filename"];
-    p.sha256             = [[f[@"TCD-SHA256"] ?: f[@"SHA256"]] lowercaseString];
+    // spelled out rather than folded into one bracket expression: an elvis
+    // operator sitting inside brackets right after a subscript trips clang's
+    // optional-chaining parse, and two fields with a fallback reads better than
+    // the operator did
+    NSString *sha = f[@"TCD-SHA256"];
+    if (!sha.length) sha = f[@"SHA256"];
+    p.sha256             = [sha lowercaseString];
     p.installPrefix      = f[@"TCD-Prefix"];
     p.minimumSystemVersion = f[@"TCD-MinOS"] ?: @"10.7";
 
-    p.type = [TCDPackage typeFromString:(f[@"TCD-Type"] ?: f[@"Type"] ?: @"app")];
-    p.arch = [TCDPackage archFromString:(f[@"TCD-Arch"] ?: f[@"Architecture"] ?: @"any")];
+    // hoisted to a local first: a subscript written directly in front of ?:
+    // while still inside the call's brackets is the shape clang mis-parses,
+    // so the fallback is resolved before it goes into the message send
+    NSString *typeStr = f[@"TCD-Type"] ?: f[@"Type"];
+    p.type = [TCDPackage typeFromString:(typeStr ?: @"app")];
+
+    NSString *archStr = f[@"TCD-Arch"] ?: f[@"Architecture"];
+    p.arch = [TCDPackage archFromString:(archStr ?: @"any")];
 
     // Debian's Installed-Size is in kibibytes.
     NSString *isize = f[@"Installed-Size"];
