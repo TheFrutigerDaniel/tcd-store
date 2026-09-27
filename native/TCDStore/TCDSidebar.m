@@ -13,6 +13,8 @@
 #import "TCDSidebar.h"
 #import "TCDTheme.h"
 
+#import <math.h>   // M_PI, cos, sin for the star and gear glyphs
+
 /* TCDSidebarRows (below) builds rows by asking the panel for its plan, and
    those methods live in the panel's own @implementation further down. The
    declarations have to come first or the compiler cannot see them yet. */
@@ -48,7 +50,6 @@ static NSImage *TCDGlyphImage(NSString *kind, NSColor *color) {
         [p moveToPoint:NSMakePoint(8, 13.5)];
         [p lineToPoint:NSMakePoint(8, 3.5)];
         [p setLineWidth:1.6];
-        [p setLineCapStyle:NSLineCapStyleRound];
         [p stroke];
         NSBezierPath *h = [NSBezierPath bezierPath];
         [h moveToPoint:NSMakePoint(5, 6.5)];
@@ -77,7 +78,6 @@ static NSImage *TCDGlyphImage(NSString *kind, NSColor *color) {
             [t moveToPoint:NSMakePoint(8 + 4.6 * cos(a), 8 + 4.6 * sin(a))];
             [t lineToPoint:NSMakePoint(8 + 6.6 * cos(a), 8 + 6.6 * sin(a))];
             [t setLineWidth:1.6];
-            [t setLineCapStyle:NSLineCapStyleRound];
             [t stroke];
         }
     } else {
@@ -132,6 +132,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 @property (nonatomic, assign) BOOL activeRow;
 @property (nonatomic, assign) BOOL hotRow;
 @property (nonatomic, copy)   void (^onClick)(void);
+@property (nonatomic, assign) BOOL pressed;
 @end
 
 @implementation TCDSidebarCard
@@ -142,8 +143,15 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 - (void)setActiveRow:(BOOL)v { _activeRow = v; [self setNeedsDisplay:YES]; }
 - (void)setHotRow:(BOOL)v { _hotRow = v; [self setNeedsDisplay:YES]; }
 
+- (void)mouseDown:(NSEvent *)e {
+    (void)e;
+    self.pressed = YES;
+    [self setNeedsDisplay:YES];
+}
 - (void)mouseUp:(NSEvent *)e {
     (void)e;
+    self.pressed = NO;
+    [self setNeedsDisplay:YES];
     if (self.onClick) self.onClick();
 }
 - (void)mouseEntered:(NSEvent *)e {
@@ -260,7 +268,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
                           baseColor:[TCDTheme cardActiveBase]
                          borderColor:[NSColor blackColor]
                       innerHighlight:YES];
-    } else if (self.isHighlighted) {
+    } else if (self.pressed) {
         [[NSColor colorWithCalibratedWhite:1.0 alpha:0.09] setFill];
         [[NSBezierPath bezierPathWithRoundedRect:r xRadius:5 yRadius:5] fill];
     }

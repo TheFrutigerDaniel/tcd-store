@@ -65,13 +65,32 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
    "Back" inside a 26pt circle would be nonsense, so the glyphs are vectors. */
 @interface TCDAeroRoundButton : NSButton
 @property (nonatomic, assign) TCDAeroRoundGlyph glyph;
+@property (nonatomic, assign) BOOL pressed;
 @end
 
 @implementation TCDAeroRoundButton
 
+/* NSButton has no -isHighlighted to hang a gradient off, and the stock bezel
+   is not what we want, so the press state is tracked by hand. */
+- (void)mouseDown:(NSEvent *)e {
+    (void)e;
+    if (!self.isEnabled) return;
+    self.pressed = YES;
+    [self setNeedsDisplay:YES];
+}
+- (void)mouseUp:(NSEvent *)e {
+    (void)e;
+    self.pressed = NO;
+    [self setNeedsDisplay:YES];
+}
+- (void)mouseExited:(NSEvent *)e {
+    (void)e;
+    if (self.pressed) { self.pressed = NO; [self setNeedsDisplay:YES]; }
+}
+
 - (void)drawRect:(NSRect)dirty {
     NSRect r = NSInsetRect([self bounds], 0.0, 0.5);
-    BOOL live = self.isEnabled && self.isHighlighted;
+    BOOL live = self.isEnabled && self.pressed;
     [TCDTheme fillRoundedGradient:r radius:13.0
                        topColor:(live ? [NSColor colorWithCalibratedWhite:0.55 alpha:1.0]
                                       : [TCDTheme roundButtonHi])
@@ -92,8 +111,6 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
         [chevron lineToPoint:NSMakePoint(cx - 2.5, cy)];
         [chevron lineToPoint:NSMakePoint(cx + 3.0, cy - 4.5)];
         [chevron setLineWidth:1.7];
-        [chevron setLineCapStyle:NSLineCapStyleRound];
-        [chevron setLineJoinStyle:NSLineJoinStyleRound];
         [chevron stroke];
     } else {
         NSBezierPath *arc = [NSBezierPath bezierPath];
@@ -102,7 +119,6 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
                                     startAngle:40.0
                                       endAngle:320.0];
         [arc setLineWidth:1.6];
-        [arc setLineCapStyle:NSLineCapStyleRound];
         [arc stroke];
         // the arrowhead that makes it read as "refresh" and not a broken ring
         NSBezierPath *head = [NSBezierPath bezierPath];
@@ -170,11 +186,6 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
     // must not be, so the bezel goes and the well is painted in -drawRect:
     [self.searchField setBordered:NO];
     [[self.searchField cell] setPlaceholderString:@"search..."];
-    [[self.searchField cell] setPlaceholderAttributedString:
-        [[NSAttributedString alloc] initWithString:@"search..."
-                                         attributes:
-            @{ NSForegroundColorAttributeName: [TCDTheme searchPlaceholder],
-               NSFontAttributeName: [TCDTheme uiFontOfSize:12.5] }]];
     [self.searchField setTarget:self];
     [self.searchField setAction:@selector(searchFieldChanged:)];
     [self addSubview:self.searchField];
@@ -203,7 +214,7 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
 
     self.updateAllButton = [[NSButton alloc] initWithFrame:NSMakeRect(0.0, 0.0, 108.0, 25.0)];
     [self.updateAllButton setTitle:@"⇩  Update All"];
-    [self.updateAllButton setBezelStyle:NSBezelStyleRounded];
+    [self.updateAllButton setBezelStyle:NSRoundedBezelStyle];
     [self.updateAllButton setFont:[TCDTheme boldFontOfSize:12.0]];
     [self.updateAllButton setTarget:self];
     [self.updateAllButton setAction:@selector(updateAllClicked:)];
@@ -219,8 +230,7 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
     [b setTitle:title];
     [b setTarget:self];
     [b setAction:action];
-    [b setBezelStyle:NSBezelStyleRounded];
-    [b setBezelColor:[NSColor clearColor]];
+    [b setBezelStyle:NSRoundedBezelStyle];
     [b setFont:[TCDTheme boldFontOfSize:12.0]];
     [b setKeyEquivalent:@""];
     [b setToolTip:title];
@@ -234,8 +244,7 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
         NSMakeRect(0.0, 0.0, 26.0, 25.0)];
     b.glyph = glyph;
     [b setTitle:tooltip];          // VoiceOver and the tooltip, nothing else
-    [b setBezelStyle:NSBezelStyleRounded];
-    [b setBezelColor:[NSColor clearColor]];
+    [b setBezelStyle:NSRoundedBezelStyle];
     [b setTarget:self];
     [b setAction:action];
     [b setToolTip:tooltip];
@@ -350,7 +359,7 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
 
 - (void)clearSearch {
     [self.searchField setStringValue:@""];
-    [self clearButton setHidden:YES];
+    [self.clearButton setHidden:YES];
     [self searchFieldChanged:self.searchField];
 }
 
