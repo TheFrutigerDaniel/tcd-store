@@ -133,6 +133,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 @property (nonatomic, assign) BOOL hotRow;
 @property (nonatomic, copy)   void (^onClick)(void);
 @property (nonatomic, assign) BOOL pressed;
+@property (nonatomic, assign) NSInteger row;   // which plan entry this card is
 @end
 
 @implementation TCDSidebarCard
@@ -288,9 +289,12 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
     }
     NSImage *img = self.chosen ? self.chosenImage : self.idleImage;
     if (img) {
-        NSSize ir = [img size];
-        ir.origin.x = NSMidX(r) - NSWidth(ir) / 2.0;
-        ir.origin.y = NSMidY(r) - NSHeight(ir) / 2.0;
+        // -size is an NSSize; the destination is a rect, so it is composed
+        // here rather than by writing an origin onto the size
+        NSSize is = [img size];
+        NSRect ir = NSMakeRect(NSMidX(r) - is.width / 2.0,
+                               NSMidY(r) - is.height / 2.0,
+                               is.width, is.height);
         [img drawInRect:ir fromRect:NSZeroRect
               operation:NSCompositeSourceOver fraction:1.0];
     }

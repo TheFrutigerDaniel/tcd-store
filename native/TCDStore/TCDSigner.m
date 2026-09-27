@@ -9,8 +9,12 @@
 #import <Security/SecStaticCode.h>
 #import <Security/SecRequirement.h>
 #import <Security/CSCommon.h>   // kSecCSCheckAllArchitectures, kSecCSCheckNestedCode
-#import <Security/CSBase.h>     // CSSearchMode, and therefore kSecCSDefault
 #import <errno.h>              // ENOENT
+
+/* The default CSSearchMode is zero. Upstream spells it as a named constant in
+   CSBase.h, which the 10.9 SDK does not ship, so the value is named here
+   rather than depending on a header that is not there. */
+static const SecCSFlags kTCDDefaultSearchMode = 0;
 
 static NSString *const kTCDSigningPolicyKey = @"TCDSigningPolicy";
 static NSString *const kTCDIdentity        = @"TCD Store";
@@ -126,13 +130,13 @@ static NSString *const kTCDIdentity        = @"TCD Store";
 - (BOOL)payloadAtPathIsTrusted:(NSString *)payloadPath {
     if (!payloadPath.length) return NO;
     SecStaticCodeRef sc = NULL;
-    if (SecStaticCodeCreateWithPath((CFStringRef)payloadPath, kSecCSDefault, &sc)
+    if (SecStaticCodeCreateWithPath((CFStringRef)payloadPath, kTCDDefaultSearchMode, &sc)
         != errSecSuccess) {
         return NO;
     }
     SecCSFlags flags = kSecCSCheckAllArchitectures | kSecCSCheckNestedCode;
     SecRequirementRef req = NULL;
-    if (SecRequirementCreateWithString((CFStringRef)@"anchor apple generic", kSecCSDefault, &req)
+    if (SecRequirementCreateWithString((CFStringRef)@"anchor apple generic", kTCDDefaultSearchMode, &req)
         != errSecSuccess) {
         CFRelease(sc);
         return NO;

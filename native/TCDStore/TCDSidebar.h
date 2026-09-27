@@ -56,6 +56,10 @@ typedef NS_ENUM(NSInteger, TCDIconDensity) {
 @property (nonatomic, assign) TCDSidebarRoute activeRoute;
 @property (nonatomic, copy)   NSString *activeSection;
 
+/* Re-runs the row plan from the current packages/sections/counts. Call after
+   changing any of them. */
+- (void)reload;
+
 /* Session state, not stored in the database. */
 @property (nonatomic, assign) TCDIconDensity density;
 
