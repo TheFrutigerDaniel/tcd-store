@@ -153,7 +153,17 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
     (void)e; self.hotRow = NO; [self setNeedsDisplay:YES];
 }
 - (NSTrackingAreaOptions)trackingAreaOptions {
-    return NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveInKeyWindow;
+    return NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
+           NSTrackingActiveInKeyWindow;
+}
+- (void)updateTrackingAreas {
+    [super updateTrackingAreas];
+    for (NSTrackingArea *a in [self trackingAreas]) [self removeTrackingArea:a];
+    [self addTrackingArea:[[NSTrackingArea alloc]
+        initWithRect:[self bounds]
+             options:[self trackingAreaOptions]
+               owner:self
+            userInfo:nil]];
 }
 
 - (void)drawRect:(NSRect)dirty {
