@@ -89,13 +89,13 @@ static NSString *const kTCDHelperToolIdentifier = @"dev.tcd-store.helper";
         return NO;
     }
 
-    // Root only when we actually need it: a .app copy does not.
-    if (self.usePersistentHelper) {
-        AuthorizationItem rootItem = { kAuthorizationRightAuthorize, 0, NULL, 0 };
-        AuthorizationRights rootRights = { 1, &rootItem };
-        AuthorizationCopyRights(auth, &rootRights, kAuthorizationEmptyEnvironment,
-                                flags, NULL);
-    }
+    // Root only when we actually need it: a .app copy does not. The SMJobBless
+    // path adds no right of its own — kAuthorizationRightAuthorize does not
+    // exist in Authorization.h — and the flags above already carry
+    // kAuthorizationFlagPreAuthorize, which is what a blessed helper needs.
+    // Installing the LaunchDaemon itself is the missing piece, and it is
+    // recorded as a known gap in docs/ARCHITECTURE.md rather than faked here
+    // with a second, unexpressible right.
 
     block();
     AuthorizationFree(auth, kAuthorizationFlagDefaults);
