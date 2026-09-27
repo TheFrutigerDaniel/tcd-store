@@ -8,9 +8,17 @@
 #import <Security/SecCode.h>
 #import <Security/SecStaticCode.h>
 #import <Security/SecRequirement.h>
+#import <Security/CSCommon.h>   // kSecCSCheckAllArchitectures, kSecCSCheckNestedCode
+#import <errno.h>              // ENOENT
 
 static NSString *const kTCDSigningPolicyKey = @"TCDSigningPolicy";
 static NSString *const kTCDIdentity        = @"TCD Store";
+
+@interface TCDSigner ()
+// readonly publicly because the policy is chosen once at construction; reopened
+// here so -init has synthesised storage to write into
+@property (nonatomic, assign) TCDSigningPolicy policy;
+@end
 
 @implementation TCDSigner
 
@@ -128,7 +136,7 @@ static NSString *const kTCDIdentity        = @"TCD Store";
         CFRelease(sc);
         return NO;
     }
-    SecStaticCodeCheckValidityWithErrors result = { 0, NULL };
+    SecStaticCodeCheckValidityWithErrors result = { NULL };  // one CFErrorRef field
     OSStatus st = SecStaticCodeCheckValidity(sc, flags, req, &result);
     CFRelease(req);
     CFRelease(sc);

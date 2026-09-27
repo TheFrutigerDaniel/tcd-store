@@ -5,6 +5,7 @@
 
 #import "TCDStoreGrid.h"
 #import "TCDTheme.h"
+#import <math.h>   // floor() in -tileWidth
 
 #pragma mark - the tile
 
@@ -81,8 +82,12 @@
             t.iconSize = [self iconSize];
             t.compact = (self.density == TCDIconDensitySmall);
             __weak TCDStoreGrid *weakSelf = self;
-            t.onOpen = ^{ [weakSelf openTile:t]; };
-            t.onVersions = ^(NSPoint pt) { [weakSelf versionsForTile:t at:pt]; };
+            // weak on both sides: the grid already retains the tile as a
+            // subview and in self.tiles, so a strong capture here would make
+            // every tile survive the reload that was meant to replace it
+            __weak TCDTileView *weakTile = t;
+            t.onOpen = ^{ [weakSelf openTile:weakTile]; };
+            t.onVersions = ^(NSPoint pt) { [weakSelf versionsForTile:weakTile at:pt]; };
             [self addSubview:t];
             [self.tiles addObject:t];
         }

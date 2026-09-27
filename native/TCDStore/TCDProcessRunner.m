@@ -8,6 +8,11 @@
 #import <unistd.h>
 #import <sys/wait.h>
 #import <errno.h>
+// used directly below, so included rather than relied on to arrive via
+// Foundation: poll() and struct pollfd, strdup, and calloc/free
+#import <poll.h>
+#import <string.h>
+#import <stdlib.h>
 
 extern char **environ;
 

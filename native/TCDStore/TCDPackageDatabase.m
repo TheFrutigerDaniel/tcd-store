@@ -4,6 +4,8 @@
 //
 
 #import "TCDPackageDatabase.h"
+#import <Cocoa/Cocoa.h>   // NSApplicationSupportDirectory, without betting on
+                           // Foundation pulling NSSearchPath.h in for us
 #import <sqlite3.h>
 
 /* availableVersions is a small list of flat dictionaries, so it round-trips
@@ -172,7 +174,12 @@ static NSString *const kSchemaVersion = @"1";
 
 #pragma mark - helpers
 
-- (void)bindText:(const char *)sql index:(int)i value:(NSString *)v {
+/* The first argument only names the column so the call sites read as a table;
+   the statement is already prepared and nothing here touches it. It is an
+   NSString because that is what every call site passes, and ARC will not
+   convert NSString to const char * for you. */
+- (void)bindText:(NSString *)label index:(int)i value:(NSString *)v {
+    (void)label;
     if (v) sqlite3_bind_text(_db, i, [v UTF8String], -1, SQLITE_TRANSIENT);
     else    sqlite3_bind_null(_db, i);
 }
@@ -340,7 +347,7 @@ static NSString *const kSelectColumns =
 
 - (NSArray *)packagesMatchingQuery:(NSString *)query {
     NSString *like = [NSString stringWithFormat:@"%%%@%%",
-        [query stringByReplacingOccurrencesOfString:@"'" withString:@""'']];
+        [query stringByReplacingOccurrencesOfString:@"'" withString:@"''"]];
     return [self query:[NSString stringWithFormat:
         @"SELECT %@ FROM packages WHERE name LIKE '%@' OR summary LIKE '%@'"
         @" OR developer LIKE '%@' OR section LIKE '%@' ORDER BY name",

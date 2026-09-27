@@ -249,6 +249,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 @property (nonatomic, strong) NSImage *idleImage;
 @property (nonatomic, strong) NSImage *chosenImage;
 @property (nonatomic, assign) BOOL chosen;
+@property (nonatomic, assign) BOOL pressed;   // NSButton has no highlight of its own
 @end
 
 @implementation TCDDensityButton
@@ -256,6 +257,18 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 - (void)setIdleImage:(NSImage *)i { _idleImage = i; [self setNeedsDisplay:YES]; }
 - (void)setChosenImage:(NSImage *)i { _chosenImage = i; [self setNeedsDisplay:YES]; }
 - (void)setChosen:(BOOL)v { _chosen = v; [self setNeedsDisplay:YES]; }
+
+- (void)mouseDown:(NSEvent *)e {
+    (void)e;
+    self.pressed = YES;
+    [self setNeedsDisplay:YES];
+}
+
+- (void)mouseUp:(NSEvent *)e {
+    (void)e;
+    self.pressed = NO;
+    [self setNeedsDisplay:YES];
+}
 
 - (void)drawRect:(NSRect)dirty {
     (void)dirty;
@@ -406,7 +419,10 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
             c.activeRow = [item[@"on"] boolValue];
             c.tag = [item[@"row"] integerValue];
             __weak TCDSidebar *weakOwner = o;
-            c.onClick = ^{ [weakOwner cardClicked:c]; };
+            // the rows view already owns the card as a subview; a strong
+            // capture here would keep every card alive across a relayout
+            __weak TCDSidebarCard *weakCard = c;
+            c.onClick = ^{ [weakOwner cardClicked:weakCard]; };
             [self addSubview:c];
             y += 30.0;
         }
