@@ -42,8 +42,9 @@ function srcName(id){
    files into HISTORY when it lands, so this screen is a readout of
    real state rather than a decoration.
    ============================================================ */
-const TRANSFERS = [];   // { key, name, version, step, fraction, pkgs }
+const TRANSFERS = [];   // { key, name, version, verb, step, fraction, pkgs, logs }
 const HISTORY   = [];   // { name, version, verb, when }
+const STEP_LOG  = [];   // every distinct step the engine announces, in order
 let transferSeq = 0;
 function relTime(d){
   const s = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
@@ -197,8 +198,10 @@ function navGlyph(k){
    ============================================================ */
 /* Store | Downloads. Switching to Downloads leaves the Store's last route
    intact underneath, so coming back lands where you were. */
-function setView(view){
-  if (state.view === view) return;
+function setView(view, force){
+  // `force` matters: a run that starts while the user already sits on Downloads
+  // still has to land its row on screen, and the early return would swallow it.
+  if (state.view === view && !force) return;
   state.view = view;
   if (view === 'downloads'){ state.route = 'downloads'; state.back = []; }
   else { state.route = 'featured'; }
@@ -509,15 +512,20 @@ function viewDownloads(){
     <span class="spacer"></span>
   </div>`);
   head.push(active.length
-    ? active.map(t => `<div class="transfer">
+    ? active.map(t => `<div class="transfer" data-transfer="${esc(t.key)}">
         <span class="spinner"></span>
-        ${icon(byId(t.pkg) || t._pkg, 44)}
+        ${icon(byId(t.pkg), 44)}
         <div class="t-main">
-          <div class="t-name">${esc(t.name)}${t.version ? ' <span style="color:var(--ink-3);font-weight:400">v' + esc(t.version) + '</span>' : ''}</div>
+          <div class="t-name"><span class="t-verb">${esc(t.verb)}</span> ${esc(t.name)}${t.version ? ' <span class="t-ver">v' + esc(t.version) + '</span>' : ''}</div>
           <div class="t-step">${esc(t.step)}</div>
           <div class="bar t-bar"><i style="width:${Math.round(t.fraction * 100)}%"></i></div>
+          ${t.logs.length ? `<div class="t-log">${t.logs.map(l => `<div>${l}</div>`).join('')}</div>` : ''}
         </div>
-        <div class="t-right">${Math.round(t.fraction * 100)}%<br><span style="color:var(--ink-3)">${t.pkgs} pkg</span></div>
+        <div class="t-right">
+          <div class="t-pct">${Math.round(t.fraction * 100)}%</div>
+          <div class="t-meta">${t.size ? bytes(t.size) + ' · ' : ''}${t.pkgs} pkg</div>
+          <button class="btn t-cancel" data-act="cancel-transfer" data-key="${esc(t.key)}">Cancel</button>
+        </div>
       </div>`).join('')
     : `<div class="dl-empty">
         <div class="glyph">${navGlyph('download')}</div>
@@ -935,65 +943,45 @@ function runInstall(ids, primaryIds, versionOverrides){
   const run = { cancelled:false, owner:newOwner('install') };
   installRun = run;
 
-  /* Register with the Downloads screen straight away, so the queue is a
-     readout of what the engine is actually doing. */
+  /* The install is watched in the Downloads queue, not behind a modal, so the
+     user is taken there and the run drives the row directly. */
   const transfer = {
     key: 't' + (transferSeq++),
     pkg: plan[0].id,
-    _pkg: plan[0],
     name: plan[0].name,
     version: target || null,
+    verb: verb,
     step: 'Starting…',
     fraction: 0,
-    pkgs: plan.length
+    pkgs: plan.length,
+    size: plan.reduce((a,b) => a + b.size, 0),
+    logs: [],
+    run: run
   };
   TRANSFERS.push(transfer);
-  if (state.view === 'downloads') render();
+  setView('downloads', true);
 
-  overlay(`
-    <div class="scrim"></div>
-    <div class="sheet prog-card" style="top:24%">
-      <div class="sheet-head" style="padding-bottom:14px">
-        <div class="sheet-title">${verb} ${esc(plan.length>1 ? plan.length + ' packages' : plan[0].name)}${target ? ' to v' + esc(target) : ''}</div>
-      </div>
-      <div class="sheet-body">
-        <div class="prog-hero">${icon(plan[0],64)}
-          <div style="flex:1">
-            <div class="prog-name">${esc(plan[0].name)}</div>
-            <div class="prog-step" id="progStep">Starting…</div>
-          </div>
-          <div style="text-align:right;font-size:11.5px;color:var(--ink-3)">
-            <div id="progPct">0%</div><div>of ${bytes(plan.reduce((a,b)=>a+b.size,0))}</div></div>
-        </div>
-        <div class="bar"><i id="progBar"></i></div>
-        <div class="prog-log" id="progLog"></div>
-      </div>
-      <div class="sheet-foot"><button class="btn" data-act="cancel-install">Cancel</button></div>
-    </div>`, run.owner);
-
-  const bar = $('#progBar'), pct = $('#progPct'), stepEl = $('#progStep'), logEl = $('#progLog');
   let si = 0, logQueue = [];
 
   function pumpLog(){
-    while (logQueue.length){
-      const d = document.createElement('div');
-      d.innerHTML = logQueue.shift();
-      logEl.appendChild(d);
-      logEl.scrollTop = logEl.scrollHeight;
-      if (logEl.children.length > 6) logEl.removeChild(logEl.firstChild);
-    }
+    if (!logQueue.length) return;
+    transfer.logs.push(logQueue.shift());
+    if (transfer.logs.length > 4) transfer.logs.shift();
+    render();
+  }
+
+  function dropTransfer(){
+    const ti = TRANSFERS.indexOf(transfer);
+    if (ti !== -1) TRANSFERS.splice(ti, 1);
+    updateDownloadBadge();
+    render();
   }
 
   function nextStep(){
-    if (run.cancelled){
-      const ti = TRANSFERS.indexOf(transfer);
-      if (ti !== -1) TRANSFERS.splice(ti, 1);
-      if (state.view === 'downloads') render();
-      return;
-    }
+    if (run.cancelled){ dropTransfer(); return; }
     if (si >= steps.length){
       setTimeout(() => {
-        if (run.cancelled) return;
+        if (run.cancelled){ dropTransfer(); return; }
         plan.forEach(function(x){
           const landed = overrides[x.id] || x.version;
           x.installed = true;
@@ -1006,13 +994,10 @@ function runInstall(ids, primaryIds, versionOverrides){
           x.autoInstalled = primary.indexOf(x.id) === -1;
         });
         if (installRun === run) installRun = null;
-        closeOverlay(run.owner);
-        const ti = TRANSFERS.indexOf(transfer);
-        if (ti !== -1) TRANSFERS.splice(ti, 1);
+        dropTransfer();
         HISTORY.push({ name: plan[0].name,
                        version: overrides[plan[0].id] || plan[0].version,
                        verb: verb, when: new Date() });
-        updateDownloadBadge();
         render();
         toast(`${verb} ${plan[0].name}` + (target ? ` to v${target}` : ''), 'ok');
         if (plan[0].type === 'kext') toast('Restart required to load the kernel extension');
@@ -1020,10 +1005,10 @@ function runInstall(ids, primaryIds, versionOverrides){
       return;
     }
     const st = steps[si];
-    stepEl.textContent = st.label;
     transfer.step = st.label;
     transfer.fraction = si / steps.length;
-    if (state.view === 'downloads') render();
+    STEP_LOG.push(st.label);
+    render();
     logQueue = st.logs.slice();
     pumpLog();
     let i = 0;
@@ -1034,11 +1019,8 @@ function runInstall(ids, primaryIds, versionOverrides){
         setTimeout(function(){ si++; nextStep(); }, 150);
         return;
       }
-      const overall = Math.round((si + st.w[i] / 100) / steps.length * 100);
-      bar.style.width = overall + '%';
-      pct.textContent = overall + '%';
-      transfer.fraction = overall / 100;
-      if (state.view === 'downloads') render();
+      transfer.fraction = (si + st.w[i] / 100) / steps.length;
+      render();
       if (i > 0) pumpLog();
       i++;
     }, 210 + Math.random() * 110);
@@ -1119,14 +1101,21 @@ document.addEventListener('click', function(e){
   const closeEl = e.target.closest('[data-close]');
   if (closeEl){ closeOverlay(ownerOf(closeEl)); return; }
 
-  const cancelEl = e.target.closest('[data-act="cancel-install"]');
-  if (cancelEl && installRun && ownsOverlay(installRun.owner)){
-    installRun.cancelled = true;   // stops this run's timers for good
-    const owner = installRun.owner;
-    installRun = null;
-    closeOverlay(owner);
-    toast('Installation cancelled');
-    render();
+  /* Cancel belongs to the run that owns the row, not to a global — several
+     transfers can be in flight at once. */
+  const cancelEl = e.target.closest('[data-act="cancel-transfer"]');
+  if (cancelEl){
+    const key = cancelEl.dataset.key;
+    const ti = TRANSFERS.map(t => t.key).indexOf(key);
+    if (ti !== -1){
+      const t = TRANSFERS[ti];
+      t.run.cancelled = true;
+      if (installRun === t.run) installRun = null;
+      TRANSFERS.splice(ti, 1);
+      updateDownloadBadge();
+      render();
+      toast(`${t.verb} ${t.name} cancelled`);
+    }
     return;
   }
 
@@ -1192,27 +1181,43 @@ document.addEventListener('click', function(e){
 function runRemove(p){
   const orphans = orphansAfterRemoving(p);
   const total = [p].concat(orphans);
-  const owner = newOwner('remove:' + p.id);
-  overlay(`
-    <div class="scrim"></div>
-    <div class="sheet prog-card" style="top:28%">
-      <div class="sheet-head" style="padding-bottom:12px"><div class="sheet-title">Removing ${esc(total.length>1 ? total.length + ' Packages' : p.name)}</div></div>
-      <div class="sheet-body">
-        <div class="prog-step" id="rmStep" style="margin-bottom:9px">Running uninstall script…</div>
-        <div class="bar"><i id="rmBar"></i></div>
-      </div>
-    </div>`, owner);
+  const run = { cancelled:false, owner:newOwner('remove:' + p.id) };
+
+  const transfer = {
+    key: 't' + (transferSeq++),
+    pkg: p.id, name: p.name, version: p.pkgVersion || null, verb: 'Remove',
+    step: 'Running uninstall script…', fraction: 0,
+    pkgs: total.length, size: p.size, logs: [], run: run
+  };
+  TRANSFERS.push(transfer);
+  setView('downloads', true);
+
+  function dropTransfer(){
+    const ti = TRANSFERS.indexOf(transfer);
+    if (ti !== -1) TRANSFERS.splice(ti, 1);
+    updateDownloadBadge();
+    render();
+  }
+
   let w = 0;
   const iv = setInterval(() => {
+    if (run.cancelled){ clearInterval(iv); dropTransfer(); return; }
     w += 22 + Math.random()*20;
-    $('#rmBar').style.width = Math.min(100, w) + '%';
+    transfer.fraction = Math.min(1, w / 100);
+    render();
     if (w >= 100){
       clearInterval(iv);
-      $('#rmStep').textContent = p.type === 'app' ? 'Moved to the Trash' : 'Payload removed · database updated';
+      transfer.step = p.type === 'app' ? 'Moved to the Trash' : 'Payload removed · database updated';
+      transfer.fraction = 1;
+      STEP_LOG.push(transfer.step);
+      transfer.logs.push('database updated');
+      render();
       setTimeout(() => {
+        if (run.cancelled) return;
         total.forEach(function(x){ x.installed = false; x.pkgVersion = null; x.hasUpdate = false; x.autoInstalled = false; });
-        closeOverlay(owner);
-        go('installed', { replace:true });
+        dropTransfer();
+        HISTORY.push({ name: p.name, version: p.pkgVersion || p.version, verb: 'Remove', when: new Date() });
+        render();
         toast(total.length > 1
           ? `Removed ${p.name} and ${orphans.length} orphaned dependenc${orphans.length>1?'ies':'y'}`
           : `Removed ${p.name}`, 'ok');

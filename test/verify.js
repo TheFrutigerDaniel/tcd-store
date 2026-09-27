@@ -143,9 +143,10 @@ function section(t) { console.log('\n' + t); }
   check('password warning shown for pkg', /password will be requested/i.test(planTxt));
   click($('[data-act="do-install"]'));
   await wait(300);
-  check('progress window open', /^(Install|Update|Downgrade|Reinstall)/.test($('.sheet').textContent.trim()),
-    $('.sheet').textContent.replace(/\s+/g,' ').trim().slice(0, 60));
-  const stepText = $('#progStep').textContent;
+  check('install runs on the Downloads page', $('#winTitle').textContent === 'Downloads', $('#winTitle').textContent);
+  check('no modal progress window', !$('.prog-card'), $('.prog-card') ? 'a modal is still shown' : 'none');
+  check('the queue row is the progress display', $$('.transfer').length === 1, $$('.transfer').length + '');
+  const stepText = window.eval('TRANSFERS[0] ? TRANSFERS[0].step : ""');
   check('progress reports a step', stepText.length > 0, stepText);
   const mesaDone = await until(() => window.eval('byId("mesa").installed'));
   check('install pipeline completed', mesaDone);
@@ -266,25 +267,32 @@ function section(t) { console.log('\n' + t); }
   await wait(40);
   check('update confirm opened', !!$('[data-act="do-install"]'));
   click($('[data-act="do-install"]'));
-  // record every distinct step label the pipeline announces, in order
-  const seenSteps = [];
+  // the engine journals every step it announces, in order — mark where this
+  // run starts so earlier installs in the suite do not pollute the reading
+  const stepMark = window.eval('STEP_LOG.length');
   const t0 = Date.now();
   while (Date.now() - t0 < 15000){
-    const el = $('#progStep');
-    if (el && el.textContent && seenSteps[seenSteps.length - 1] !== el.textContent) seenSteps.push(el.textContent);
     if (window.eval('byId("bettertouchtool").pkgVersion') === '2.0.2') break;
     await wait(60);
   }
-  const stepStr = seenSteps.join(' → ');
+  const stepStr = window.eval('STEP_LOG.slice(' + stepMark + ').join(" → ")');
   check('re-signing step appears under ad-hoc policy', /Re-signing payload/.test(stepStr), stepStr);
   check('steps run in order',
     /Downloading/.test(stepStr) && /Verifying/.test(stepStr) &&
     /authorisation/.test(stepStr) && /Installing/.test(stepStr), stepStr);
-  check('ad-hoc pipeline runs 7 labels', seenSteps.length === 7, seenSteps.length + ': ' + stepStr);
+  check('ad-hoc pipeline announces 6 steps', window.eval('STEP_LOG.length') - stepMark === 6,
+    (window.eval('STEP_LOG.length') - stepMark) + ': ' + stepStr);
   check('bettertouchtool updated', window.eval('byId("bettertouchtool").pkgVersion') === '2.0.2');
   check('explicit target is not marked auto-installed', window.eval('byId("bettertouchtool").autoInstalled') === false);
 
 
+
+  // earlier flows leave the app wherever the engine last took it, so the
+  // top-level-nav section starts from a known place
+  window.eval('setView("store"); go("featured",{replace:true})');
+  $('#searchInput').value = '';
+  $('#searchInput').dispatchEvent(new window.Event('input', { bubbles:true }));
+  await wait(80);
 
   section('aero chrome + top-level nav');
   check('wordmark reads TCD store', $('#wordmarkCheck') === null ? true : true);
@@ -363,6 +371,89 @@ function section(t) { console.log('\n' + t); }
   check('history emptied', window.eval('HISTORY.length') === 0);
   check('empty history state shown', /Nothing installed or removed yet/.test($('#content').textContent));
   check('Clear History button gone', !$('[data-act="clear-history"]'));
+
+
+  section('the install is watched live on Downloads');
+  const hist0 = window.eval('HISTORY.length');
+  setVal($('#searchInput'), '');
+  window.eval('go("pkg",{pkgId:"vlc"})');          // two packages in the plan
+  await wait(60);
+  click($('[data-act="install"]'));
+  await wait(60);
+  click($('[data-act="do-install"]'));
+  await wait(500);
+  check('the app jumps to Downloads on confirm', $('#winTitle').textContent === 'Downloads');
+  check('the sidebar is gone while installing', $('#split').classList.contains('no-sidebar'));
+  check('the queue row is expanded', !!$('.transfer .t-log') || window.eval('TRANSFERS[0].logs.length') > 0);
+  check('the row offers its own Cancel', !!$('[data-act="cancel-transfer"]'));
+  check('the log is real engine output', /GET \/pool\//.test($('.transfer .t-log').textContent),
+    $('.transfer .t-log').textContent.slice(0, 70));
+  check('the row shows the transfer size', /MB|KB/.test($('.transfer .t-meta').textContent), $('.transfer .t-meta').textContent);
+  check('the badge is live', $('.aero-pill[data-view="downloads"] .pill-badge').textContent === '1');
+  // cancel it from the row and make sure the engine really stops
+  const key = $('.transfer').dataset.transfer;
+  click($('[data-act="cancel-transfer"]'));
+  await wait(200);
+  check('the cancelled row leaves the queue', $$('.transfer').length === 0, $$('.transfer').length + '');
+  check('the badge clears on cancel', !$('.aero-pill[data-view="downloads"] .pill-badge'));
+  check('a cancelled run is not filed in history', window.eval('HISTORY.length') === hist0,
+    window.eval('HISTORY.length') + ' vs ' + hist0);
+  check('a cancelled install does not mark the package installed', !window.eval('byId("vlc").installed'));
+  await wait(1200);
+  check('a cancelled run really stops its timers', $$('.transfer').length === 0);
+
+  section('removal also runs in the queue');
+  const hist1 = window.eval('HISTORY.length');
+  window.eval('go("pkg",{pkgId:"caffeine"})');
+  await wait(60);
+  click($('[data-act="remove"]'));
+  await wait(60);
+  click($('[data-act="do-remove"]'));
+  await wait(400);
+  check('removal lands on Downloads', $('#winTitle').textContent === 'Downloads');
+  check('removal shows a queue row', $$('.transfer').length === 1, $$('.transfer').length + '');
+  check('removal row is labelled Remove', /Remove/.test($('.transfer').textContent), $('.transfer').textContent.slice(0, 50));
+  await until(() => window.eval('TRANSFERS.length') === 0, 8000);
+  check('removal leaves the queue', $$('.transfer').length === 0);
+  check('removal is filed in history', window.eval('HISTORY.length') === hist1 + 1,
+    hist1 + ' -> ' + window.eval('HISTORY.length'));
+  check('history row says Remove', /Remove/.test($('.hist-row').textContent));
+  check('the package is uninstalled', !window.eval('byId("caffeine").installed'));
+
+  section('the store panel is black with white text');
+  click($('.aero-pill[data-view="store"]'));
+  await wait(80);
+  const cs = el => window.getComputedStyle(el);
+  // sample an INACTIVE card — the active one is deliberately a step lighter
+  const idle = $('.nav-card:not(.active)');
+  check('there is an idle card to sample', !!idle);
+  check('sidebar panel is black', cs($('#sidebar')).backgroundColor === 'rgb(19, 19, 21)',
+    cs($('#sidebar')).backgroundColor);
+  check('card background is black', cs(idle).backgroundColor === 'rgb(22, 23, 26)', cs(idle).backgroundColor);
+  check('card label is white', cs(idle.querySelector('.card-label')).color === 'rgb(244, 245, 247)',
+    cs(idle.querySelector('.card-label')).color);
+  check('card icon is neutral, not blue', cs(idle.querySelector('.card-ico')).color === 'rgb(212, 217, 224)',
+    cs(idle.querySelector('.card-ico')).color);
+  // only the Updates card carries a sub-count, so find one that exists
+  const sub = document.querySelector('.nav-card .card-sub');
+  check('a card sub-count exists to sample', !!sub, $('.nav-card[data-nav="updates"] .card-sub') ? 'updates card' : 'none');
+  check('card sub-count is grey, not blue', cs(sub).color === 'rgb(154, 160, 170)', cs(sub).color);
+  check('the active card is also dark, not blue', cs($('.nav-card.active')).backgroundColor === 'rgb(48, 51, 58)',
+    cs($('.nav-card.active')).backgroundColor);
+  check('the group headings read grey on black', cs($('.side-head')).color === 'rgb(138, 143, 153)',
+    cs($('.side-head')).color);
+  check('the content area stays light', cs($('#content')).backgroundColor !== cs($('#sidebar')).backgroundColor,
+    cs($('#content')).backgroundColor + ' vs ' + cs($('#sidebar')).backgroundColor);
+  // No purplish blue may survive in the sidebar. jsdom's CSSOM re-serialises
+  // colours as rgb(), so a hex scan of the source is the only honest check.
+  const cssSrc = fs.readFileSync(path.join(ROOT, 'css/app.css'), 'utf8');
+  // split into complete `selector { ... }` blocks, then keep the sidebar ones
+  const sidebarRules = (cssSrc.match(/[^{}]+\{[^{}]*\}/g) || [])
+    .filter(b => /\.(nav-card|sidebar|side-)/.test(b.split('{')[0]));
+  const purplish = sidebarRules.filter(r => /7f8cff|9db2ff|1a5fae|2c78cb|rgb\(157,\s*178,\s*255\)|rgb\(127,\s*140,\s*255\)/i.test(r));
+  check('no purplish blue left in the sidebar rules', purplish.length === 0, purplish.join(' | ').slice(0, 160));
+  const caretBg = window.getComputedStyle($('.ver-caret')).backgroundColor;
+  check('the blue triangle is still blue', caretBg === 'rgb(74, 144, 226)', caretBg);
 
   section('version disclosure menu');
   // The blue triangle unfolds every version the source carries. This is the

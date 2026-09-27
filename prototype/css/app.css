@@ -511,10 +511,10 @@ button.pill{ cursor:default; }
    ============================================================ */
 
 :root{
-  --card:        #1c1c1e;
-  --card-hover:  #2a2a2e;
-  --card-label:  #7f8cff;   /* the periwinkle accent from the sketch */
-  --card-sub:    #6b6b73;
+  --card:        #16171a;   /* black panel, white text — no periwinkle */
+  --card-hover:  #1e1f22;
+  --card-label:  #f4f5f7;
+  --card-sub:    #9aa0aa;
 }
 
 /* ---------- sidebar: dark cards ---------- */
@@ -525,18 +525,18 @@ button.pill{ cursor:default; }
 .nav-card{
   display:flex; align-items:center; gap:9px;
   margin:0 10px 4px; padding:8px 11px;
-  background:#1c1c1e;            /* fallback if var() is unsupported */
-  background:var(--card);
+  background-color:#16171a;      /* fallback if var() is unsupported */
+  background-image:var(--card);
   border-radius:7px;
   cursor:default;
   box-shadow:0 1px 2px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.05);
   transition:background .12s ease;
 }
-.nav-card:hover{ background:#2a2a2e; background:var(--card-hover); }
-.nav-card.active{ background:#1c1c1e; background:var(--card);
-  box-shadow:0 0 0 2px #7f8cff, 0 0 0 2px var(--card-label), 0 2px 6px rgba(0,0,0,.3); }
+.nav-card:hover{ background-color:#1e1f22; background-image:var(--card-hover); }
+.nav-card.active{ background-color:#30333a; background-image:var(--card);
+  box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 2px 6px rgba(0,0,0,.3); }
 .nav-card .card-label{
-  color:#7f8cff;                 /* fallback if var() is unsupported */
+  color:#f4f5f7;                 /* fallback if var() is unsupported */
   color:var(--card-label); font-size:12.5px; font-weight:600;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;
 }
@@ -544,10 +544,10 @@ button.pill{ cursor:default; }
   color:var(--card-sub); font-size:10.5px; font-weight:500; flex:0 0 auto;
 }
 .nav-card.active .card-label{ color:#fff; }
-.nav-card .card-ico{ width:15px; height:15px; flex:0 0 15px; color:#7f8cff; color:var(--card-label); display:grid; place-items:center; }
+.nav-card .card-ico{ width:15px; height:15px; flex:0 0 15px; color:#d4d9e0; color:var(--card-label); display:grid; place-items:center; }
 .nav-card.active .card-ico{ color:#fff; }
 .nav-card .card-count{
-  background:var(--card-label); color:#fff; font-size:10px; font-weight:700;
+  background:#f4f5f7; background:var(--card-label); color:#1a1c20; font-size:10px; font-weight:700;
   min-width:17px; text-align:center; padding:1px 5px; border-radius:9px; flex:0 0 auto;
 }
 .nav-card .card-dot{ width:6px;height:6px;border-radius:50%; flex:0 0 6px; }
@@ -577,8 +577,8 @@ button.pill{ cursor:default; }
 .ver-caret{
   position:absolute; top:9px; right:9px;
   width:22px; height:22px; padding:0; border:0; border-radius:5px;
-  background:#7f8cff;            /* fallback if var() is unsupported */
-  background:var(--card-label); color:#fff; cursor:default;
+  background:#4a90e2;            /* the version disclosure stays blue */
+  background:var(--accent); color:#fff; cursor:default;
   display:grid; place-items:center; line-height:0;
   box-shadow:0 1px 3px rgba(0,0,0,.25);
   opacity:0; transition:opacity .12s ease;
@@ -780,14 +780,14 @@ button.pill{ cursor:default; }
 }
 .nav-card:hover{ background:linear-gradient(180deg,#565d69 0%, #383e47 48%, #2b2f36 100%); }
 .nav-card.active{
-  background:linear-gradient(180deg,#4e9de9 0%, #2c78cb 48%, #1f66b3 52%, #1a5596 100%);
+  background:linear-gradient(180deg,#4a4e57 0%, #30333a 48%, #24262b 100%);
   background-color:#2f7fd4;
   border-color:#0f3a6e;
   box-shadow:0 1px 3px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.34);
 }
 .nav-card .card-label{
   position:relative; z-index:1;
-  color:#9db2ff; font-size:12.5px; font-weight:600;
+  color:#f4f5f7; font-size:12.5px; font-weight:600;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;
 }
 .nav-card.active .card-label{ color:#fff; }
@@ -795,7 +795,7 @@ button.pill{ cursor:default; }
 .nav-card.active .card-sub{ color:rgba(255,255,255,.85); }
 .nav-card .card-ico{
   position:relative; z-index:1; width:15px; height:15px; flex:0 0 15px;
-  color:#9db2ff; display:grid; place-items:center;
+  color:#d4d9e0; display:grid; place-items:center;
 }
 .nav-card.active .card-ico{ color:#fff; }
 .nav-card .card-dot{ position:relative; z-index:1; width:6px;height:6px;border-radius:50%; flex:0 0 6px; }
@@ -805,7 +805,7 @@ button.pill{ cursor:default; }
   background:rgba(255,255,255,.9); color:#2b3038; font-size:10px; font-weight:700;
   min-width:17px; text-align:center; padding:1px 5px; border-radius:9px; flex:0 0 auto;
 }
-.nav-card.active .card-count{ background:rgba(255,255,255,.95); color:#1a5fae; }
+.nav-card.active .card-count{ background:#fff; color:#1a1c20; }
 
 /* ---------- content panel ---------- */
 .content{
@@ -843,12 +843,12 @@ button.pill{ cursor:default; }
 .ver-caret{
   position:absolute; top:9px; right:9px; z-index:2;
   width:22px; height:22px; padding:0; border:0; border-radius:11px;
-  background:linear-gradient(180deg,#8fb8f5 0%, #4a90e2 50%, #2f7fd4 100%);
-  background-color:#4a90e2;
+  background-color:#4a90e2;            /* blue, always: the version disclosure */
+  background-image:linear-gradient(180deg,#8fb8f5 0%, #4a90e2 50%, #2f7fd4 100%);
   color:#fff; cursor:default; display:grid; place-items:center; line-height:0;
   box-shadow:0 1px 3px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.45);
 }
-.ver-caret:hover{ background:linear-gradient(180deg,#a3c6f8 0%, #5a9de8 50%, #3b8ede 100%); }
+.ver-caret:hover{ background-color:#3b8ede; background-image:linear-gradient(180deg,#a3c6f8 0%, #5a9de8 50%, #3b8ede 100%); }
 
 /* ---------- rows ---------- */
 .rows{ display:flex; flex-direction:column; gap:2px; }
@@ -1008,3 +1008,84 @@ button.pill{ cursor:default; }
   font-size:11.5px; color:var(--ink-2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
 }
+
+/* ============================================================
+   Store panel — black with white text
+   The blue-on-dark read as purplish and muddy against the grey
+   content area, so the whole sidebar is neutral black and the
+   single blue accent is left to the Update All button.
+   ============================================================ */
+.sidebar{
+  background-color:#131315;
+  background-image:linear-gradient(180deg,#1a1a1c 0%, #121214 60%, #0c0c0e 100%);
+  border-right:1px solid #000;
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.06);
+}
+.side-head{ color:#8a8f99; }
+.side-item{ color:#f2f3f5; }
+.side-item:hover{ background:rgba(255,255,255,.07); }
+.side-item.active{
+  background-color:#2a2d33;
+  background-image:linear-gradient(180deg,#3d4149 0%, #2a2d33 48%, #1e2025 100%);
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 1px 2px rgba(0,0,0,.5);
+  border-left:2px solid #4e9de9;   /* the one blue accent: where you are */
+  padding-left:6px;
+}
+.side-item.active .side-ico{ color:#fff; }
+.side-ico{ color:#b9bec8; }
+.side-count{ background:rgba(255,255,255,.13); color:#dfe3ea; }
+.side-item.active .side-count{ background:rgba(255,255,255,.22); color:#fff; }
+.side-item.src .dot{ background:#5a5f69; }
+
+.nav-card{
+  background-color:#16171a;
+  background-image:linear-gradient(180deg,#242528 0%, #16171a 48%, #0d0e10 100%);
+  border-color:#000;
+  box-shadow:0 1px 2px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.nav-card:hover{
+  background-color:#1e1f22;
+  background-image:linear-gradient(180deg,#2f3135 0%, #1e1f22 48%, #141517 100%);
+  border-color:#000;
+  box-shadow:0 1px 3px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14);
+}
+.nav-card.active{
+  background-color:#30333a;
+  background-image:linear-gradient(180deg,#4a4e57 0%, #30333a 48%, #24262b 100%);
+  border-color:#000;
+  box-shadow:0 1px 3px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.24);
+}
+.nav-card .card-label{ color:#f4f5f7; }
+.nav-card .card-sub{ color:#9aa0aa; }
+.nav-card .card-ico{ color:#d4d9e0; }
+.nav-card.active .card-label{ color:#fff; }
+.nav-card.active .card-ico{ color:#fff; }
+.nav-card .card-count{ background:rgba(255,255,255,.92); color:#1a1c20; }
+.nav-card.active .card-count{ background:#fff; color:#1a1c20; }
+
+/* the transfer row now carries the log and a cancel button */
+.transfer .t-ver{ color:var(--ink-3); font-weight:400; }
+.transfer .t-right{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+.transfer .t-pct{ font-size:13px; font-weight:600; color:var(--ink-2); }
+.transfer .t-meta{ font-size:11px; color:var(--ink-3); }
+.transfer .t-cancel{ margin-top:4px; padding:2px 9px; font-size:11px; }
+.transfer .t-log{
+  margin-top:7px; padding:6px 8px;
+  background:#14161a; border:1px solid #2a2e35; border-radius:5px;
+  font-family:"Menlo","Monaco","Courier New",monospace; font-size:10.5px; line-height:1.55;
+  color:#9fe8a8; white-space:nowrap; overflow:hidden;
+}
+.transfer .t-log div{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.transfer .t-log div:last-child{ color:#e6f7ea; }
+
+.transfer .t-verb{
+  display:inline-block; margin-right:5px; padding:0 6px;
+  font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
+  color:#fff; background:var(--accent); border-radius:3px; vertical-align:1px;
+}
+.transfer .t-verb.install{ background:#3f8f3f; }
+.transfer .t-verb.update{ background:var(--accent); }
+.transfer .t-verb.downgrade{ background:#c07a1e; }
+.transfer .t-verb.reinstall{ background:#5a6270; }
+.transfer .t-verb.remove{ background:#b4504a; }

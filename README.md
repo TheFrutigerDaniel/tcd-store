@@ -37,14 +37,19 @@ Aero toolbar beneath it — **TCD store** wordmark on the left, glossy
 `Store | Downloads` segmented pills on the right, and a search field on the
 light row below.
 
-The **sidebar is scoped to Store**: glossy rows for Featured, Updates,
-Installed, Sources and Settings, then the dark category cards. **Downloads is
-a full-width screen with no sidebar.**
+The **sidebar is scoped to Store**: rows for Featured, Updates, Installed,
+Sources and Settings, then the category cards. It is **black with white text** —
+the earlier periwinkle-on-black read as muddy, so the panel is neutral black and
+the single blue accent is the Update All button plus a blue tick on the row you
+are on. **Downloads is a full-width screen with no sidebar.**
 
-**Downloads** is not a mockup — the install engine pushes into the queue as it
-runs, so the active rows carry the real step name and real progress, and the
-pill grows a badge while something is in flight. Rows move to history when the
-run lands, and Clear History empties it. Removals are filed there too.
+**Installation happens live on the Downloads page.** Confirm a plan and the app
+takes you there and runs the install in the queue — no separate progress window.
+Each row carries the verb, the real step name, the byte count, a progress bar
+and a rolling log of actual engine output (`GET /pool/…`, `sha256 …`,
+`SMJobBless …`), plus a Cancel button that stops that specific run. The
+Downloads pill grows a badge while anything is in flight, and rows drop into
+history when the run lands. Removals run the same way. Clear History empties it.
 
 Try the **blue triangle** in the corner of any tile. It unfolds every version
 the source carries, Cydia-style, so you can install, update, **downgrade**, or
@@ -81,10 +86,11 @@ cd prototype && python3 serve.py 8080 &
 node test/verify.js
 ```
 
-162 assertions covering every screen, the dependency resolver, the version
+195 assertions covering every screen, the dependency resolver, the version
 disclosure and downgrade path, both signing policies, the orphan rules, the
-source flows, and the top-level Store/Downloads switch with a live install
-observed mid-flight on the Downloads queue. It runs the prototype's real
+source flows, the top-level Store/Downloads switch, an install observed
+mid-flight on the Downloads queue (including cancelling it and proving the
+timers actually stop), and the black-panel palette. It runs the prototype's real
 scripts in a real DOM, so it catches runtime errors rather than just checking
 that markup exists.
 
