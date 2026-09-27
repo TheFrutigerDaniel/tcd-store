@@ -282,8 +282,7 @@
     for (TCDPackage *p in self.packages) if (p.hasUpdate) [list addObject:p];
     if (!list.count) return;
     [self startPlan:[self.resolver planForPackages:list]
-            primary:list
-               title:@"Update All"];
+              title:@"Update All"];
 }
 
 #pragma mark - TCDStoreViewDelegate

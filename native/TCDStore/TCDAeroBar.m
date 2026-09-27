@@ -155,9 +155,8 @@ typedef NS_ENUM(NSInteger, TCDAeroRoundGlyph) {
 }
 
 - (void)buildBar {
-    CGFloat w = NSWidth([self bounds]);
-    CGFloat h1 = [TCDTheme barLineOneHeight];
-    CGFloat h2 = [TCDTheme barLineTwoHeight];
+    // No geometry here: every frame is set by -layoutBar once the views exist,
+    // so a later resize or metric change has exactly one place to go.
 
     // ---- line one: wordmark left, pills right ----
     self.wordmark = [self labelWithString:@"TCD store"
