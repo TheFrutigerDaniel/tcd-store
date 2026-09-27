@@ -32,10 +32,13 @@ possible and a plain reload always shows the current build. The asset URLs in
 
 It is a real, working prototype — not a mockup. The look is Frutiger Aero in
 the Snow Leopard register: gradients, gloss and soft shadows, but opaque and
-calm rather than translucent glass. The native OS title bar stays, with the
-Aero toolbar beneath it — **TCD store** wordmark on the left, glossy
-`Store | Downloads` segmented pills on the right, and a search field on the
-light row below.
+calm rather than translucent glass. The native OS title bar stays, and beneath
+it sits **one black bar** — a single `.aero-chrome` surface holding two lines:
+**TCD store** wordmark with glossy `Store | Downloads` segmented pills on the
+first, the search field with Back / Refresh / Update All on the second. They
+are one element, both lines are transparent, so there is no seam between them
+and no light strip. The gradient ramps across the whole bar, the wordmark line
+on its light top, the search line into its dark bottom.
 
 The **sidebar is scoped to Store**: rows for Featured, Updates, Installed,
 Sources and Settings, then the category cards. It is **black with white text** —
@@ -86,11 +89,12 @@ cd prototype && python3 serve.py 8080 &
 node test/verify.js
 ```
 
-195 assertions covering every screen, the dependency resolver, the version
+219 assertions covering every screen, the dependency resolver, the version
 disclosure and downgrade path, both signing policies, the orphan rules, the
 source flows, the top-level Store/Downloads switch, an install observed
 mid-flight on the Downloads queue (including cancelling it and proving the
-timers actually stop), and the black-panel palette. It runs the prototype's real
+timers actually stop), the black-panel palette, and the single black bar
+(structural assertions, since jsdom has no layout engine). It runs the prototype's real
 scripts in a real DOM, so it catches runtime errors rather than just checking
 that markup exists.
 

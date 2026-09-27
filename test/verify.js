@@ -39,6 +39,7 @@ const loaded = new Promise(res => {
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
+const cs = el => window.getComputedStyle(el);
 const click = el => {
   if (!el) throw new Error('click on null');
   el.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -420,10 +421,65 @@ function section(t) { console.log('\n' + t); }
   check('history row says Remove', /Remove/.test($('.hist-row').textContent));
   check('the package is uninstalled', !window.eval('byId("caffeine").installed'));
 
+
+  section('the toolbar and search are one black bar');
+  const chrome = $('.aero-chrome');
+  check('there is a single bar element', !!chrome);
+  check('the toolbar is inside it', !!$('.aero-chrome .aero-bar'));
+  check('the search row is inside it', !!$('.aero-chrome .searchbar'));
+  check('the wordmark is inside the same bar', !!$('.aero-chrome .aero-wordmark'));
+  check('the pills are inside the same bar', !!$('.aero-chrome .aero-pill'));
+  check('the search field is inside the same bar', !!$('.aero-chrome .searchbox'));
+  check('the update button is inside the same bar', !!$('.aero-chrome .aero-cta, .aero-chrome #btnUpdateAll'));
+  // nothing may sit between the two lines
+  check('nothing separates the two lines', $('.aero-chrome').children.length === 2,
+    $('.aero-chrome').children.length + ' children');
+  check('they are the two lines we expect',
+    $('.aero-chrome').children[0].classList.contains('aero-bar') &&
+    $('.aero-chrome').children[1].classList.contains('searchbar'));
+  const barBg = cs($('.aero-chrome')).backgroundColor;
+  check('the bar itself is black', barBg === 'rgb(58, 63, 72)', barBg);
+  check('both lines are transparent so the bar shows through',
+    cs($('.aero-bar')).backgroundColor === 'rgba(0, 0, 0, 0)' &&
+    cs($('.searchbar')).backgroundColor === 'rgba(0, 0, 0, 0)',
+    cs($('.aero-bar')).backgroundColor + ' / ' + cs($('.searchbar')).backgroundColor);
+  check('the search row carries no light strip',
+    cs($('.searchbar')).backgroundImage === 'none' || cs($('.searchbar')).backgroundImage === '',
+    cs($('.searchbar')).backgroundImage);
+  check('the search well is a dark inset', cs($('.searchbox')).backgroundColor === 'rgb(28, 31, 37)',
+    cs($('.searchbox')).backgroundColor);
+  check('typed text is light on the dark well', cs($('#searchInput')).color === 'rgb(236, 238, 241)',
+    cs($('#searchInput')).color);
+  check('the round buttons are dark glass', cs($('.round-btn')).backgroundColor === 'rgb(61, 67, 76)',
+    cs($('.round-btn')).backgroundColor);
+  check('the round button glyph is light', cs($('.round-btn')).color === 'rgb(232, 234, 237)',
+    cs($('.round-btn')).color);
+  check('the wordmark is white on black', cs($('.aero-wordmark')).color === 'rgb(255, 255, 255)',
+    cs($('.aero-wordmark')).color);
+  check('the title bar above is still separate', !!$('.titlebar') && !$('.titlebar').closest('.aero-chrome'));
+  check('the bar is not black inside the content', cs($('#content')).backgroundColor !== barBg,
+    cs($('#content')).backgroundColor + ' vs ' + barBg);
+  // jsdom has no layout engine, so prove the bar spans the window structurally:
+  // it is a direct child of the window root and its next sibling is the split.
+  const winKids = [...$('#window').children];
+  const chromeIdx = winKids.indexOf($('.aero-chrome'));
+  check('the bar is a direct child of the window', chromeIdx !== -1);
+  check('the bar sits directly above the content', winKids[chromeIdx + 1] === $('#split'),
+    winKids[chromeIdx + 1] ? winKids[chromeIdx + 1].className : 'no next sibling');
+  check('the bar sits directly below the title bar', winKids[chromeIdx - 1] === $('.titlebar'),
+    winKids[chromeIdx - 1] ? winKids[chromeIdx - 1].className : 'no previous sibling');
+  check('the bar is the only element between title bar and content', chromeIdx === 1,
+    'index ' + chromeIdx);
+  // and no light background may survive in either line
+  const chromeSrc = fs.readFileSync(path.join(ROOT, 'css/app.css'), 'utf8');
+  const chromeBlocks = (chromeSrc.match(/[^{}]+\{[^{}]*\}/g) || [])
+    .filter(b => /\.(aero-chrome|aero-bar|searchbar|searchbox|round-btn)\b/.test(b.split('{')[0]));
+  const lightOnBar = chromeBlocks.filter(b => /#f6f7f8|#eceef0|#e4e5e8/.test(b));
+  check('no light strip left in the bar rules', lightOnBar.length === 0, lightOnBar.join(' | ').slice(0, 140));
+
   section('the store panel is black with white text');
   click($('.aero-pill[data-view="store"]'));
   await wait(80);
-  const cs = el => window.getComputedStyle(el);
   // sample an INACTIVE card — the active one is deliberately a step lighter
   const idle = $('.nav-card:not(.active)');
   check('there is an idle card to sample', !!idle);

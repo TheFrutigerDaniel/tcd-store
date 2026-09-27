@@ -645,8 +645,8 @@ button.pill{ cursor:default; }
   padding:0 14px;
   background:linear-gradient(180deg, var(--aero-hi) 0%, #454b55 48%, var(--aero-lo) 52%, #23262c 100%);
   background-color:#3a3f48;   /* fallback if gradients are unsupported */
-  border-bottom:1px solid #14161a;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16), 0 1px 2px rgba(0,0,0,.28);
+  border-bottom:0;
+  box-shadow:none;
   position:relative; z-index:20;
 }
 .aero-wordmark{
@@ -692,9 +692,9 @@ button.pill{ cursor:default; }
   flex:0 0 42px; height:42px;
   display:flex; align-items:center; gap:8px;
   padding:0 12px;
-  background:linear-gradient(180deg,#f6f7f8 0%, #e4e5e8 100%);
-  background-color:#eceef0;
-  border-bottom:1px solid var(--line);
+  background-color:#23262c;
+  background-image:linear-gradient(180deg,#2b2f36 0%, #23262c 52%, #191c20 100%);
+  border-bottom:0;
 }
 .searchbar-grow{ flex:1; }
 .searchbox{
@@ -1089,3 +1089,70 @@ button.pill{ cursor:default; }
 .transfer .t-verb.downgrade{ background:#c07a1e; }
 .transfer .t-verb.reinstall{ background:#5a6270; }
 .transfer .t-verb.remove{ background:#b4504a; }
+
+
+/* ============================================================
+   One black bar
+   The toolbar and the search row are a single surface. They share one
+   element so there is no seam to betray: the gradient ramps across the
+   whole thing, the wordmark line sits on the light top of the ramp, and
+   the search line continues into the dark bottom of it.
+   ============================================================ */
+.aero-chrome{
+  flex:0 0 auto;
+  background-color:#3a3f48;
+  background-image:linear-gradient(180deg,
+     #4a505a 0%, #444a54 26%, #3a3f48 47%,
+     #2b2f36 53%, #23262c 78%, #191c20 100%);
+  border-bottom:1px solid #0d0f11;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 5px rgba(0,0,0,.38);
+  position:relative; z-index:20;
+}
+/* the two lines are transparent — the bar behind them is the surface */
+.aero-chrome .aero-bar,
+.aero-chrome .searchbar{
+  background:none; border:0; box-shadow:none;
+}
+
+/* search field: a dark inset well inside the black bar */
+.searchbox{
+  background-color:#1c1f25;
+  border:1px solid rgba(0,0,0,.62);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.10);
+}
+.searchbox:focus-within{
+  border-color:#4a90e2;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.55), 0 0 0 3px rgba(74,144,226,.26);
+}
+.search-ico{ color:#98a0ab; }
+.searchbox input{ color:#eceef1; }
+.searchbox input::placeholder{ color:#868d97; }
+.search-clear{ background:#4e555f; color:#e6e9ed; }
+.search-clear:hover{ background:#5d646f; }
+
+/* round buttons: dark glass, white glyphs */
+.round-btn{
+  background-color:#3d434c;
+  background-image:linear-gradient(180deg,#565d68 0%, #3c424a 50%, #2d323a 100%);
+  border:1px solid rgba(0,0,0,.52);
+  color:#e8eaed;
+  box-shadow:0 1px 2px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.round-btn:hover:not(:disabled){ background-image:linear-gradient(180deg,#68707c 0%, #4a505a 50%, #383d45 100%); }
+
+/* Update All stays the blue accent — it is the only colour in the bar */
+.aero-cta{
+  box-shadow:0 1px 3px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.38);
+}
+.aero-cta:hover{ filter:brightness(1.08); }
+
+/* the glossy pills read better with a touch more contrast on black */
+.aero-pill{ border-color:rgba(0,0,0,.55); box-shadow:0 1px 3px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.6); }
+.aero-pill.active{ box-shadow:0 1px 3px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.34); }
+
+/* the bar's bottom edge sits above the content, so give it a crisp shadow */
+.aero-chrome::after{
+  content:""; position:absolute; left:0; right:0; bottom:-3px; height:3px;
+  background:linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,0));
+  pointer-events:none;
+}
