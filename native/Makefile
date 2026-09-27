@@ -49,6 +49,7 @@ $(APP): $(BUILD)/TCDStore
 	@mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	@cp $(BUILD)/TCDStore        $(APP)/Contents/MacOS/TCDStore
 	@cp TCDStore/Info.plist      $(APP)/Contents/Info.plist
+	@cp TCDStore/demo-index.txt  $(APP)/Contents/Resources/demo-index.txt
 	@printf 'APPL????' > $(APP)/Contents/PkgInfo
 	@echo "built $(APP)  (floor $(FLOOR), SDK $(MACOSX_DIRS))"
 

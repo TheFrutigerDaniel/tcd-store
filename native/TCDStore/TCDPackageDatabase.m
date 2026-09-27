@@ -416,6 +416,28 @@ static NSString *const kSelectColumns =
     sqlite3_finalize(st);
 }
 
+- (NSUInteger)removePackagesForSourceIdentifier:(NSString *)sourceIdentifier {
+    if (!_db || !sourceIdentifier.length) return 0;
+    NSMutableArray *found = [NSMutableArray array];
+    NSArray *all = [self allPackages];
+    for (TCDPackage *p in all)
+        if ([p.sourceIdentifier isEqualToString:sourceIdentifier]) [found addObject:p.identifier];
+    if (!found.count) return 0;
+
+    sqlite3_stmt *st = NULL;
+    if (sqlite3_prepare_v2(_db, "DELETE FROM packages WHERE identifier=?", -1, &st, NULL)
+        != SQLITE_OK) return 0;
+    NSUInteger removed = 0;
+    for (NSString *identifier in found) {
+        sqlite3_reset(st);
+        sqlite3_clear_bindings(st);
+        [self bindText:@"identifier" stmt:st index:1 value:identifier];
+        if (sqlite3_step(st) == SQLITE_DONE) removed++;
+    }
+    sqlite3_finalize(st);
+    return removed;
+}
+
 - (void)storeIndexData:(NSData *)data forSource:(NSString *)identifier {
     if (!_db) return;
     sqlite3_stmt *st = NULL;

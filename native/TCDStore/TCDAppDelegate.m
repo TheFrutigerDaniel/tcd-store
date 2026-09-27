@@ -23,6 +23,7 @@
 #import "TCDDownloadsView.h"
 #import "TCDPackageDatabase.h"
 #import "TCDIndexParser.h"
+#import "TCDDemoSource.h"
 #import "TCDResolver.h"
 #import "TCDInstaller.h"
 #import "TCDAuthorizer.h"
@@ -72,9 +73,17 @@
     self.authorizer = [[TCDAuthorizer alloc] init];
 
     NSError *err = nil;
-    if (![[TCDPackageDatabase sharedDatabase] openWithError:&err]) {
+    TCDPackageDatabase *db = [TCDPackageDatabase sharedDatabase];
+    if (![db openWithError:&err]) {
         [self presentFatal:err.localizedDescription];
         return;
+    }
+
+    // A store with no sources shows an empty grid, which tells you nothing.
+    // The bundled demo is registered only when the store has no sources at
+    // all, so it never appears alongside one the user added themselves.
+    if (![db allSources].count) {
+        [TCDDemoSource registerIfNoSourcesExist];
     }
 
     [self buildWindow];

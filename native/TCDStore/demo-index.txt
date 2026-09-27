@@ -1,0 +1,363 @@
+#
+# Demo source for TCD Store — bundled so the app has something to show before
+# any real source is added. This is NOT a real repository: every Filename points
+# at demo/, so nothing here is downloadable and nothing here claims to be
+# software that exists. Delete the source from the Sources screen to remove it.
+#
+# The fields are the usual Debian/Packages ones plus the TCD-* extensions; see
+# TCDIndexParser for the full list. Several entries carry more than one version
+# on purpose, because that is what makes the blue version triangle worth having.
+#
+
+Package: dev.tcdstore.demo.memo
+Version: 2.1.0
+TCD-Name: Memo
+TCD-Section: Utilities
+TCD-Summary: A small scratchpad for text you do not want to keep
+TCD-Developer: TCD Store
+Filename: demo/memo-2.1.0.app.zip
+SHA256: 4b1c0f5e9a7d2358c6f0e4b8a2d71c935ef6021487ac39bd5e0147f8c62a3d19
+TCD-Size: 2411724
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 214
+TCD-Rating-Average: 4.4
+Description: A scratchpad that opens, saves and gets out of the way.
+ Lines wrap, the window remembers where you left it, and there is exactly one
+ preference: whether to keep the last five files in the recent menu.
+Installed-Size: 5891
+
+Package: dev.tcdstore.demo.memo
+Version: 2.0.0
+Filename: demo/memo-2.0.0.app.zip
+SHA256: 9a04c7b1e35d8f2460ba91c7e4d035f8b6e12947cd03a85f6b2e09471cd35a8f
+TCD-Size: 2281340
+TCD-Type: app
+TCD-Arch: any
+Description: Previous release.
+
+Package: dev.tcdstore.demo.memo
+Version: 1.9.2
+Filename: demo/memo-1.9.2.app.zip
+SHA256: c37e0a4915bd823f6e70c14b9a2d8f035b6e17940cd82a5f61b7e0934dc2a85f
+TCD-Size: 2205488
+TCD-Type: app
+TCD-Arch: any
+Description: Older release.
+
+Package: dev.tcdstore.demo.countdown
+Version: 1.4.0
+TCD-Name: Countdown
+TCD-Section: Utilities
+TCD-Summary: A full-screen timer you can read from across the room
+TCD-Developer: TCD Store
+Filename: demo/countdown-1.4.0.app.zip
+SHA256: 7e2a9b4c60d13f5827ae04b9c1d36f8205be7a194cd60f38b5e1a0947c2d6b83
+TCD-Size: 1105920
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 88
+TCD-Rating-Average: 4.1
+Description: Set a duration, start it, and the screen fills with the time
+ remaining. Colours are fixed rather than picked, because a countdown you have
+ to configure is a clock, and you already have one of those.
+Installed-Size: 2703
+
+Package: dev.tcdstore.demo.pixelpeek
+Version: 0.9.1
+TCD-Name: Pixel Peek
+TCD-Section: Graphics
+TCD-Summary: Magnifier and colour picker for people doing pixel work
+TCD-Developer: TCD Store
+Filename: demo/pixelpeek-0.9.1.app.zip
+SHA256: 2d81f0a37c95e614b0d8a2f4e97c1b05386fd214a7c60e95b38a1d0c72f6b419
+TCD-Size: 3870720
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 47
+TCD-Rating-Average: 4.6
+Description: A 16x loupe that follows the pointer, with a readout of the
+ colour under the cursor in hex, HSB and Lab. Grids snap to whole pixels
+ because half-pixels are where the interesting work is not.
+Installed-Size: 9449
+
+Package: dev.tcdstore.demo.ruler
+Version: 3.0.0
+TCD-Name: Screen Ruler
+TCD-Section: Graphics
+TCD-Summary: Horizontal and vertical guides anywhere on screen
+TCD-Developer: TCD Store
+Filename: demo/ruler-3.0.0.app.zip
+SHA256: 5b3e9c17a04d8f26135be07c4a9d2f38016ca7b4de905f18a3c6e0712b4d8a5e
+TCD-Size: 894568
+TCD-Type: app
+TCD-Arch: any
+Description: Two guides, two hotkeys, no dock icon. Guides survive when the
+ window that owned them closes, which is the entire reason this exists.
+Installed-Size: 2184
+
+Package: dev.tcdstore.demo.palette
+Version: 1.2.3
+TCD-Name: Palette
+TCD-Section: Graphics
+TCD-Summary: Keeps a swatch library and exports it as an .act file
+TCD-Developer: TCD Store
+Filename: demo/palette-1.2.3.pkg
+SHA256: 1f7c5a93b62d04e87a1c930f5b8d26e34071a9c5f28b60d4e1937a05c8b2d6f
+TCD-Size: 1953792
+TCD-Type: pkg
+TCD-Prefix: /Applications/Palette.app
+TCD-Arch: any
+TCD-Rating-Count: 132
+TCD-Rating-Average: 4.0
+Description: A swatch library that can round-trip through Photoshop act files
+ without you having to remember the format's particular idea of what a colour
+ is.
+Installed-Size: 4772
+
+Package: dev.tcdstore.demo.logline
+Version: 4.1.0
+TCD-Name: Logline
+TCD-Section: Development
+TCD-Summary: Tail anything without leaving the keyboard
+TCD-Developer: TCD Store
+Filename: demo/logline-4.1.0.app.zip
+SHA256: 8c04a1b37e29d5f016b4a8c3d7e20f5918a6b4d03c97e2518f6a0b3d4c81e759
+TCD-Size: 2914560
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 301
+TCD-Rating-Average: 4.7
+Description: Type a command, press return, and the output is there. No
+ project files, no panels, no preferences beyond the font.
+Installed-Size: 7116
+
+Package: dev.tcdstore.demo.logline
+Version: 3.8.0
+Filename: demo/logline-3.8.0.app.zip
+SHA256: 2e7b5d90c148f3a6510bd8e4c7a92f036b1d4e8a709c5f2613b0e8d47a2c95f1
+TCD-Size: 2713600
+TCD-Type: app
+TCD-Arch: any
+Description: Previous release.
+
+Package: dev.tcdstore.demo.hexedit
+Version: 2.0.1
+TCD-Name: Hexedit
+TCD-Section: Development
+TCD-Summary: Open a file at a byte offset and edit what is there
+TCD-Developer: TCD Store
+Filename: demo/hexedit-2.0.1.app.zip
+SHA256: 6a1f4b8e07c3925d81b6e0a3c5d79f24180be6a3c9d705f18b2e6a4c0d1b8f37
+TCD-Size: 1622016
+TCD-Type: app
+TCD-Arch: any
+Description: Reads the whole file, shows what you asked for, and refuses to
+ save if the file changed underneath you.
+Installed-Size: 3960
+
+Package: dev.tcdstore.demo.difftwain
+Version: 1.0.3
+TCD-Name: Diff Twain
+TCD-Section: Development
+TCD-Summary: Side-by-side comparison for text, with a line-level and a word-level view
+TCD-Developer: TCD Store
+Filename: demo/difftwain-1.0.3.pkg
+SHA256: 3b8e0a5c91d472f6b038e5c1a7d90f26481b3e6a0c59f2748d1b0e6a2c95d3708
+TCD-Size: 1253376
+TCD-Type: pkg
+TCD-Prefix: /Applications/Diff Twain.app
+TCD-Arch: any
+Description: Two files, two panes, and a scroll bar on each showing where
+ the differences are. It does not merge, patch, or pretend to be a VCS.
+Installed-Size: 3060
+
+Package: dev.tcdstore.demo.mailbox
+Version: 5.2.0
+TCD-Name: Mailbox
+TCD-Section: Internet
+TCD-Summary: One inbox, several accounts, no HTML
+TCD-Developer: TCD Store
+Filename: demo/mailbox-5.2.0.app.zip
+SHA256: a47c0e18b35d9f26170be4a8c1d530f9627be1a4cd80f3925b6e1a0d8c4f2b79
+TCD-Size: 5767168
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 517
+TCD-Rating-Average: 3.8
+Description: Plain text, threaded, fast. Message bodies are shown as the
+ server sent them, because rendering someone's mail is a choice and this app
+ does not make it for you.
+Installed-Size: 14082
+
+Package: dev.tcdstore.demo.mailbox
+Version: 5.0.0
+Filename: demo/mailbox-5.0.0.app.zip
+SHA256: 6d2a9b40e17c3f58296ba0d4e7c18f23095b6ea1d48c07f3629b5e1a08d4c6f3
+TCD-Size: 5406720
+TCD-Type: app
+TCD-Arch: any
+Description: Previous release.
+
+Package: dev.tcdstore.demo.fetchlet
+Version: 0.6.0
+TCD-Name: Fetchlet
+TCD-Section: Internet
+TCD-Summary: A menu-bar item for the one page you check constantly
+TCD-Developer: TCD Store
+Filename: demo/fetchlet-0.6.0.pkg
+SHA256: e19b4c7a05d2f83641be0c9a8d37f521604be7a3c9d05f2816b3e4a07c9d5f2b
+TCD-Size: 483328
+TCD-Type: pkg
+TCD-Prefix: /Applications/Fetchlet.app
+TCD-Arch: any
+Description: One URL, a refresh interval, and a badge on the menu bar when the
+ page changes. It will not show you a notification about a notification.
+Installed-Size: 1180
+
+Package: dev.tcdstore.demo.ledger
+Version: 2.4.1
+TCD-Name: Ledger
+TCD-Section: Office
+TCD-Summary: Plain-text accounting with a double-entry core
+TCD-Developer: TCD Store
+Filename: demo/ledger-2.4.1.app.zip
+SHA256: 8a3d5b1e07c492f16b8e0a3d9c24f5071be6a3c9d05f28146b3e0a7c9d5f2b4
+TCD-Size: 3461120
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 264
+TCD-Rating-Average: 4.3
+Description: A journal file, a set of rules about which accounts are real, and
+ a report that tells you what you actually spent. Imports CSV, exports CSV.
+Installed-Size: 8456
+
+Package: dev.tcdstore.demo.cardfile
+Version: 1.1.0
+TCD-Name: Cardfile
+TCD-Section: Office
+TCD-Summary: Index cards for people who still think in index cards
+TCD-Developer: TCD Store
+Filename: demo/cardfile-1.1.0.app.zip
+SHA256: 0f6a2c8b14e37d59026ba0d4e7c91f38052be6a4cd80f19b3e6a0c5d2847f0b6
+TCD-Size: 1527808
+TCD-Type: app
+TCD-Arch: any
+Description: A box of cards, a stack of dividers, and search that understands
+ you did not type the name exactly.
+Installed-Size: 3731
+
+Package: dev.tcdstore.demo.clockwork
+Version: 3.2.0
+TCD-Name: Clockwork
+TCD-Section: System
+TCD-Summary: A menu bar clock that shows more than the time
+TCD-Developer: TCD Store
+Filename: demo/clockwork-3.2.0.pkg
+SHA256: 27b5d9a3c08e146f25bd0c7a9e314f8620be7a5c9d03f2814b6e0a7c95d2f48
+TCD-Size: 1048576
+TCD-Type: pkg
+TCD-Prefix: /Applications/Clockwork.app
+TCD-Arch: any
+TCD-Rating-Count: 176
+TCD-Rating-Average: 4.2
+Description: Week number, seconds, and a second time zone, in a menu bar item
+ about 30 points wide.
+Installed-Size: 2560
+
+Package: dev.tcdstore.demo.cleandisk
+Version: 1.1.4
+TCD-Name: Clean Disk
+TCD-Section: System
+TCD-Summary: Find what is filling the disk, then delete exactly that
+TCD-Developer: TCD Store
+Filename: demo/cleandisk-1.1.4.pkg
+SHA256: c40a7e19b35d28f6019ba0c4e7d83f521604bea3c9d05f2816b4e0a7c92d5f38
+TCD-Size: 2236416
+TCD-Type: pkg
+TCD-Prefix: /Applications/Clean Disk.app
+TCD-Arch: any
+Description: Sorts by size, shows the last-modified date of everything it
+ found, and moves candidates to a folder rather than deleting them on the
+ strength of a guess.
+Installed-Size: 5461
+
+Package: dev.tcdstore.demo.sleepaid
+Version: 1.0.0
+TCD-Name: Sleep Aid
+TCD-Section: System
+TCD-Summary: Puts the machine to sleep after a period of no input
+TCD-Developer: TCD Store
+Filename: demo/sleepaid-1.0.0.kext.tar.gz
+SHA256: 90d3f7b1a26c540e8172ba0d4e7c91f38052be6a4cd80f19b3e6a0c5d2847f0b
+TCD-Size: 655360
+TCD-Type: kext
+TCD-Arch: i386
+Description: A kext that watches the HID layer for input and asks the power
+ management system to sleep when it stops. Intentionally does nothing else.
+Conflicts: dev.tcdstore.demo.sleepaid2
+Installed-Size: 160
+
+Package: dev.tcdstore.demo.wallpaper
+Version: 4.0.0
+TCD-Name: Wallpaper
+TCD-Section: System
+TCD-Summary: Desktop pictures that do not change on their own
+TCD-Developer: TCD Store
+Filename: demo/wallpaper-4.0.0.prefpane.tar.gz
+SHA256: 4e8b0c2a17d593f6048ba1c7e902d4613be5a7c9d03f2815b6e0a7c94d2f380
+TCD-Size: 2897920
+TCD-Type: prefpane
+TCD-Arch: any
+Description: A preference pane that shows a folder of pictures and lets you
+ choose one. It does not fetch new ones, because a desktop that changes while
+ you are not looking is just noise.
+Installed-Size: 7075
+
+Package: dev.tcdstore.demo.tictactoe
+Version: 1.0.0
+TCD-Name: Noughts
+TCD-Section: Games
+TCD-Summary: The game, as a single window that fits in a corner
+TCD-Developer: TCD Store
+Filename: demo/noughts-1.0.0.app.zip
+SHA256: 71a5c0e9b36d284f1509ba0c4e7d83f521604bea3c9d05f2816b4e0a7c92d5f38
+TCD-Size: 294912
+TCD-Type: app
+TCD-Arch: any
+Description: Noughts and crosses against the system engine, with the move
+ list and the score from the last session kept between launches.
+Installed-Size: 720
+
+Package: dev.tcdstore.demo.solitaire
+Version: 6.1.2
+TCD-Name: Patience
+TCD-Section: Games
+TCD-Summary: Klondike, with the statistics that actually matter
+TCD-Developer: TCD Store
+Filename: demo/patience-6.1.2.app.zip
+SHA256: b38f5d1a07c462e9815ba0c4e7d83f521604bea3c9d05f2816b4e0a7c92d5f3a
+TCD-Size: 8388608
+TCD-Type: app
+TCD-Arch: any
+TCD-Rating-Count: 96
+TCD-Rating-Average: 3.9
+Description: Klondike, draw one or three, and a win/loss record per day that
+ you can look at without it offering you encouragement.
+Installed-Size: 20480
+
+Package: dev.tcdstore.demo.chess
+Version: 2.2.0
+TCD-Name: Chess
+TCD-Section: Games
+TCD-Summary: Play against the system engine or another person at the same desk
+TCD-Developer: TCD Store
+Filename: demo/chess-2.2.0.pkg
+SHA256: 9d2a7c40e18b35f26049ba0c4e7d83f521604bea3c9d05f2816b4e0a7c92d5f3
+TCD-Size: 13107200
+TCD-Type: pkg
+TCD-Prefix: /Applications/Chess.app
+TCD-Arch: any
+Description: A board, a clock, and the system engine. Nothing else, and in
+ particular no hints, because the hints are the reason nobody finishes a game.
+Installed-Size: 32012

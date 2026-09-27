@@ -49,6 +49,11 @@
 - (NSDictionary *)sourceWithIdentifier:(NSString *)identifier;
 - (void)addSource:(NSDictionary *)source;      // {identifier,name,url,kind}
 - (void)removeSourceWithIdentifier:(NSString *)identifier;
+
+/* Removes every package that came from `sourceIdentifier` and reports how
+   many went. Packages are keyed by identifier alone, so removing a source has
+   to take its packages with it or they survive as orphans in the grid. */
+- (NSUInteger)removePackagesForSourceIdentifier:(NSString *)sourceIdentifier;
 - (void)storeIndexData:(NSData *)data forSource:(NSString *)identifier;
 - (NSData *)indexDataForSource:(NSString *)identifier;
 
