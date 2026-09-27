@@ -36,8 +36,26 @@ function srcName(id){
   return s ? s.name : id;
 }
 
+/* ============================================================
+   Downloads
+   Not a mock: the install engine pushes into TRANSFERS as it runs and
+   files into HISTORY when it lands, so this screen is a readout of
+   real state rather than a decoration.
+   ============================================================ */
+const TRANSFERS = [];   // { key, name, version, step, fraction, pkgs }
+const HISTORY   = [];   // { name, version, verb, when }
+let transferSeq = 0;
+function relTime(d){
+  const s = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+  if (s < 45)   return 'just now';
+  if (s < 3600) return Math.round(s / 60) + ' min ago';
+  if (s < 86400) return Math.round(s / 3600) + ' h ago';
+  return Math.round(s / 86400) + ' d ago';
+}
+
 /* ---------------- state ---------------- */
 const state = {
+  view: 'store',          // store | downloads — the top-level pill
   route: 'featured',     // featured | category | updates | installed | search | sources | settings | pkg
   section: null,
   pkgId: null,
@@ -124,6 +142,7 @@ function orphansAfterRemoving(pkg){
    SIDEBAR
    ============================================================ */
 function renderSidebar(){
+  $('#split').classList.toggle('no-sidebar', state.view === 'downloads');
   const nUpd = PKGS.filter(p => p.hasUpdate).length;
   const nIns = PKGS.filter(p => p.installed).length;
   const s = [];
@@ -176,6 +195,32 @@ function navGlyph(k){
 /* ============================================================
    CONTENT ROUTER
    ============================================================ */
+/* Store | Downloads. Switching to Downloads leaves the Store's last route
+   intact underneath, so coming back lands where you were. */
+function setView(view){
+  if (state.view === view) return;
+  state.view = view;
+  if (view === 'downloads'){ state.route = 'downloads'; state.back = []; }
+  else { state.route = 'featured'; }
+  $$('.aero-pill').forEach(function(b){
+    const on = b.dataset.view === view;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  const active = TRANSFERS.length;
+  const dl = $('.aero-pill[data-view="downloads"]');
+  if (active && !dl.querySelector('.pill-badge')){
+    const b = document.createElement('span');
+    b.className = 'pill-badge';
+    b.textContent = String(active);
+    dl.appendChild(b);
+  } else if (!active && dl.querySelector('.pill-badge')){
+    dl.querySelector('.pill-badge').remove();
+  }
+  $('#content').scrollTop = 0;
+  render();
+}
+
 function go(route, opts){
   opts = opts || {};
   if (state.route === 'pkg' && route !== 'pkg' && !opts.replace){
@@ -220,6 +265,7 @@ function render(){
     sources:   viewSources,
     source:    viewSource,
     settings:  viewSettings,
+    downloads: viewDownloads,
     pkg:       viewPackage
   }[state.route] || viewFeatured)();
   renderStatus();
@@ -230,9 +276,11 @@ function renderToolbar(){
   const upd = PKGS.filter(p => p.hasUpdate);
   $('#btnBack').disabled = !state.back.length && state.route !== 'pkg';
   $('#btnUpdateAll').hidden = !(upd.length && (state.route === 'updates'));
-  const showSearch = state.route !== 'settings';
+  // The sidebar belongs to Store. Downloads is a full-width screen.
+  const showSearch = state.route !== 'settings' && state.view === 'store';
   $('#searchWrap').style.visibility = showSearch ? 'visible' : 'hidden';
   const titles = {
+    downloads:'Downloads',
     featured:'Featured', category:'Categories', categorylist: state.section || 'Category',
     updates:'Updates', installed:'Installed',
     search:'Search', sources:'Sources', source: srcName(state.section), settings:'Settings',
@@ -449,6 +497,55 @@ function viewSettings(){
       <dt>Architectures</dt><dd>i386, x86_64</dd>
     </div>
   </div>`;
+}
+
+
+function viewDownloads(){
+  const active = TRANSFERS.slice();
+  const head = [];
+  head.push(`<div class="dl-head">
+    <h2>Active</h2>
+    <span class="count">${active.length}</span>
+    <span class="spacer"></span>
+  </div>`);
+  head.push(active.length
+    ? active.map(t => `<div class="transfer">
+        <span class="spinner"></span>
+        ${icon(byId(t.pkg) || t._pkg, 44)}
+        <div class="t-main">
+          <div class="t-name">${esc(t.name)}${t.version ? ' <span style="color:var(--ink-3);font-weight:400">v' + esc(t.version) + '</span>' : ''}</div>
+          <div class="t-step">${esc(t.step)}</div>
+          <div class="bar t-bar"><i style="width:${Math.round(t.fraction * 100)}%"></i></div>
+        </div>
+        <div class="t-right">${Math.round(t.fraction * 100)}%<br><span style="color:var(--ink-3)">${t.pkgs} pkg</span></div>
+      </div>`).join('')
+    : `<div class="dl-empty">
+        <div class="glyph">${navGlyph('download')}</div>
+        <h3 style="margin:0 0 4px;color:var(--ink-2);font-size:14px">Nothing in flight</h3>
+        <div>Install something from the Store and it will show up here while it runs.</div>
+      </div>`);
+
+  const hist = HISTORY.slice().reverse();
+  head.push(`<div class="group-title" style="display:flex;align-items:center;gap:10px">
+      History
+      <span style="flex:1"></span>
+    </div>`);
+  head.push(`<div class="dl-head" style="margin-bottom:8px">
+      <span class="count" style="background:var(--ink-3)">${hist.length}</span>
+      <span class="spacer"></span>
+      ${hist.length ? `<button class="btn" data-act="clear-history">Clear History</button>` : ''}
+    </div>`);
+  head.push(hist.length
+    ? `<div>${hist.map(h => `<div class="hist-row">
+        <span class="hist-verb ${h.verb.toLowerCase()}">${esc(h.verb)}</span>
+        <span class="hist-name">${esc(h.name)}</span>
+        <span class="hist-ver">v${esc(h.version)}</span>
+        <span class="hist-when">${esc(relTime(h.when))}</span>
+      </div>`).join('')}</div>`
+    : `<div class="dl-empty" style="padding:34px 20px">
+        <div>Nothing installed or removed yet.</div></div>`);
+
+  return `<div class="pad">${head.join('')}</div>`;
 }
 
 /* ---------------- package detail ---------------- */
@@ -829,8 +926,29 @@ function runInstall(ids, primaryIds, versionOverrides){
   /* Every run gets its own token. The callbacks must close over THIS object,
      not the module-level `installRun`: a later run replaces that variable, and
      a zombie run that keeps reading it would never see its own cancellation. */
+  // A plan that is not installable must never appear in the queue at all.
+  if (planConflicts(plan).length || missingDeps(plan).length){
+    toast('That plan cannot be installed', 'err');
+    return;
+  }
+
   const run = { cancelled:false, owner:newOwner('install') };
   installRun = run;
+
+  /* Register with the Downloads screen straight away, so the queue is a
+     readout of what the engine is actually doing. */
+  const transfer = {
+    key: 't' + (transferSeq++),
+    pkg: plan[0].id,
+    _pkg: plan[0],
+    name: plan[0].name,
+    version: target || null,
+    step: 'Starting…',
+    fraction: 0,
+    pkgs: plan.length
+  };
+  TRANSFERS.push(transfer);
+  if (state.view === 'downloads') render();
 
   overlay(`
     <div class="scrim"></div>
@@ -867,7 +985,12 @@ function runInstall(ids, primaryIds, versionOverrides){
   }
 
   function nextStep(){
-    if (run.cancelled) return;
+    if (run.cancelled){
+      const ti = TRANSFERS.indexOf(transfer);
+      if (ti !== -1) TRANSFERS.splice(ti, 1);
+      if (state.view === 'downloads') render();
+      return;
+    }
     if (si >= steps.length){
       setTimeout(() => {
         if (run.cancelled) return;
@@ -884,6 +1007,12 @@ function runInstall(ids, primaryIds, versionOverrides){
         });
         if (installRun === run) installRun = null;
         closeOverlay(run.owner);
+        const ti = TRANSFERS.indexOf(transfer);
+        if (ti !== -1) TRANSFERS.splice(ti, 1);
+        HISTORY.push({ name: plan[0].name,
+                       version: overrides[plan[0].id] || plan[0].version,
+                       verb: verb, when: new Date() });
+        updateDownloadBadge();
         render();
         toast(`${verb} ${plan[0].name}` + (target ? ` to v${target}` : ''), 'ok');
         if (plan[0].type === 'kext') toast('Restart required to load the kernel extension');
@@ -892,6 +1021,9 @@ function runInstall(ids, primaryIds, versionOverrides){
     }
     const st = steps[si];
     stepEl.textContent = st.label;
+    transfer.step = st.label;
+    transfer.fraction = si / steps.length;
+    if (state.view === 'downloads') render();
     logQueue = st.logs.slice();
     pumpLog();
     let i = 0;
@@ -905,12 +1037,37 @@ function runInstall(ids, primaryIds, versionOverrides){
       const overall = Math.round((si + st.w[i] / 100) / steps.length * 100);
       bar.style.width = overall + '%';
       pct.textContent = overall + '%';
+      transfer.fraction = overall / 100;
+      if (state.view === 'downloads') render();
       if (i > 0) pumpLog();
       i++;
     }, 210 + Math.random() * 110);
   }
   setTimeout(nextStep, 300);
 }
+/* Names in the plan that no source carries. */
+function missingDeps(plan){
+  const known = {};
+  PKGS.forEach(p => { known[p.id] = true; });
+  const out = [];
+  plan.forEach(function(p){
+    p.depends.forEach(function(d){ if (!known[d] && out.indexOf(d) === -1) out.push(d); });
+  });
+  return out;
+}
+
+function landedVersion(pkg, overrides){
+  return (overrides && overrides[pkg.id]) || pkg.version;
+}
+function updateDownloadBadge(){
+  const dl = $('.aero-pill[data-view="downloads"]');
+  if (!dl) return;
+  const n = TRANSFERS.length;
+  const b = dl.querySelector('.pill-badge');
+  if (n && b) b.textContent = String(n);
+  else if (!n && b) b.remove();
+}
+
 function fakeHash(p){
   let s = '';
   for (let i = 0; i < 64; i++) s += '0123456789abcdef'[(p.version.charCodeAt(i % p.version.length) + i * 7) % 16];
@@ -1002,8 +1159,16 @@ document.addEventListener('click', function(e){
     else if (a === 'retry-src')  runRefresh();
     else if (a === 'refresh-all')runRefresh();
     else if (a === 'update-all') runUpdateAll();
+    else if (a === 'clear-history'){
+      HISTORY.length = 0;
+      render();
+      toast('History cleared');
+    }
     return;
   }
+
+  const viewBtn = e.target.closest('[data-view]');
+  if (viewBtn){ setView(viewBtn.dataset.view); return; }
 
   const nav = e.target.closest('[data-nav]');
   if (nav){

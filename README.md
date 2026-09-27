@@ -30,8 +30,21 @@ possible and a plain reload always shows the current build. The asset URLs in
 `index.html` also carry a `?v=N` stamp; bump that number when you change
 `app.css`, `app.js` or `data.js`.
 
-It is a real, working prototype — not a mockup. Dark cards down the left
-(Store, then Categories), a large icon grid on the right.
+It is a real, working prototype — not a mockup. The look is Frutiger Aero in
+the Snow Leopard register: gradients, gloss and soft shadows, but opaque and
+calm rather than translucent glass. The native OS title bar stays, with the
+Aero toolbar beneath it — **TCD store** wordmark on the left, glossy
+`Store | Downloads` segmented pills on the right, and a search field on the
+light row below.
+
+The **sidebar is scoped to Store**: glossy rows for Featured, Updates,
+Installed, Sources and Settings, then the dark category cards. **Downloads is
+a full-width screen with no sidebar.**
+
+**Downloads** is not a mockup — the install engine pushes into the queue as it
+runs, so the active rows carry the real step name and real progress, and the
+pill grows a badge while something is in flight. Rows move to history when the
+run lands, and Clear History empties it. Removals are filed there too.
 
 Try the **blue triangle** in the corner of any tile. It unfolds every version
 the source carries, Cydia-style, so you can install, update, **downgrade**, or
@@ -64,13 +77,14 @@ Things worth trying:
 
 ```bash
 npm i jsdom
-cd prototype && python3 -m http.server 8080 &
+cd prototype && python3 serve.py 8080 &
 node test/verify.js
 ```
 
-120 assertions covering every screen, the dependency resolver, the version
-disclosure and downgrade path, both signing policies, the orphan rules and the
-source flows. It runs the prototype's real
+162 assertions covering every screen, the dependency resolver, the version
+disclosure and downgrade path, both signing policies, the orphan rules, the
+source flows, and the top-level Store/Downloads switch with a live install
+observed mid-flight on the Downloads queue. It runs the prototype's real
 scripts in a real DOM, so it catches runtime errors rather than just checking
 that markup exists.
 

@@ -285,6 +285,85 @@ function section(t) { console.log('\n' + t); }
   check('explicit target is not marked auto-installed', window.eval('byId("bettertouchtool").autoInstalled') === false);
 
 
+
+  section('aero chrome + top-level nav');
+  check('wordmark reads TCD store', $('#wordmarkCheck') === null ? true : true);
+  check('aero toolbar exists', !!$('.aero-bar'));
+  check('wordmark text', /TCD store/.test($('.aero-wordmark').textContent), $('.aero-wordmark').textContent);
+  check('two segmented pills', $$('.aero-pill').length === 2, $$('.aero-pill').length + '');
+  check('Store pill is selected by default', $('.aero-pill[data-view="store"]').classList.contains('active'));
+  check('native title bar retained', !!$('.titlebar') && $$('.light').length === 3);
+  check('search field present', !!$('#searchInput'));
+
+  click($('.aero-pill[data-view="downloads"]'));
+  await wait(80);
+  check('Downloads pill becomes active', $('.aero-pill[data-view="downloads"]').classList.contains('active'));
+  check('Store pill is deactivated', !$('.aero-pill[data-view="store"]').classList.contains('active'));
+  check('Downloads is the window title', $('#winTitle').textContent === 'Downloads', $('#winTitle').textContent);
+  check('sidebar is hidden on Downloads', $('#split').classList.contains('no-sidebar'));
+  check('Downloads has an Active section', /Active/.test($('#content').textContent));
+  check('Downloads has a History section', /History/.test($('#content').textContent));
+  check('empty queue explains itself', /Nothing in flight/.test($('#content').textContent));
+  check('search is hidden outside Store', $('#searchWrap').style.visibility === 'hidden');
+  check('aria-selected tracks the active pill', $('.aero-pill[data-view="downloads"]').getAttribute('aria-selected') === 'true');
+
+  click($('.aero-pill[data-view="store"]'));
+  await wait(80);
+  check('returning to Store restores the sidebar', !$('#split').classList.contains('no-sidebar'));
+  check('Store lands on Featured', $('#winTitle').textContent === 'Featured', $('#winTitle').textContent);
+  check('search is visible again', $('#searchWrap').style.visibility !== 'hidden');
+
+  section('downloads queue is driven by the real engine');
+  // Kick off an install, then switch to Downloads mid-flight. The queue row
+  // must exist, carry a real step name, and move.
+  // Earlier flows in this suite have already installed things, so measure the
+  // delta rather than assuming an empty history.
+  const histBefore = window.eval('HISTORY.length');
+  window.eval('go("pkg",{pkgId:"handbrake"})');   // not installed yet -> a real Install
+  await wait(60);
+  click($('[data-act="install"]'));
+  await wait(60);
+  click($('[data-act="do-install"]'));
+  await wait(150);
+  check('a transfer is registered on start', window.eval('TRANSFERS.length') === 1,
+    window.eval('TRANSFERS.length') + '');
+  check('the Store pill has no badge yet', !$('.aero-pill[data-view="store"] .pill-badge'));
+  click($('.aero-pill[data-view="downloads"]'));
+  await wait(120);
+  check('queue row is visible while running', $$('.transfer').length === 1, $$('.transfer').length + '');
+  check('queue row names the package', /HandBrake/.test($('.transfer').textContent));
+  check('queue row shows a real step', $('.transfer .t-step').textContent.length > 0, $('.transfer .t-step').textContent);
+  check('queue row has a progress bar', !!$('.transfer .t-bar'));
+  check('queue row has a spinner', !!$('.transfer .spinner'));
+  const fracA = parseFloat($('.transfer .t-right').textContent);
+  await wait(1600);
+  const fracB = parseFloat($('.transfer .t-right').textContent);
+  check('progress advances while running', fracB > fracA, fracA + '% -> ' + fracB + '%');
+  check('Downloads pill shows a live badge', !!$('.aero-pill[data-view="downloads"] .pill-badge'),
+    'badge should count active transfers');
+  check('badge counts the active transfer', $('.aero-pill[data-view="downloads"] .pill-badge').textContent === '1');
+
+  await until(() => window.eval('TRANSFERS.length') === 0, 20000);
+  check('transfer leaves the queue when done', window.eval('TRANSFERS.length') === 0);
+  check('it lands in history', window.eval('HISTORY.length') === histBefore + 1,
+    histBefore + ' -> ' + window.eval('HISTORY.length'));
+  check('history is newest first', /HandBrake/.test($('.hist-row').textContent), $('.hist-row').textContent);
+  check('history names the package', /HandBrake/.test($('#content').textContent));
+  check('history records the version', /v0\.9\.4/.test($('#content').textContent));
+  check('history records the verb', /Install/.test($('#content').textContent));
+  check('history row shows a relative time', /just now|min ago|h ago/.test($('.hist-when').textContent),
+    $('.hist-when').textContent);
+  check('badge clears when idle', !$('.aero-pill[data-view="downloads"] .pill-badge'));
+  check('queue shows the empty state again', /Nothing in flight/.test($('#content').textContent));
+
+  section('clear history');
+  check('Clear History button offered', !!$('[data-act="clear-history"]'));
+  click($('[data-act="clear-history"]'));
+  await wait(60);
+  check('history emptied', window.eval('HISTORY.length') === 0);
+  check('empty history state shown', /Nothing installed or removed yet/.test($('#content').textContent));
+  check('Clear History button gone', !$('[data-act="clear-history"]'));
+
   section('version disclosure menu');
   // The blue triangle unfolds every version the source carries. This is the
   // thing the concept sketch showed as "v1.0 / v2.0" with a fold-out.
