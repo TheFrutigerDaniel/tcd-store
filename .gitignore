@@ -1,0 +1,12 @@
+# build output
+native/build/
+
+# node
+node_modules/
+package-lock.json
+
+# prototype screenshots / scratch
+prototype/.shots/
+
+# macOS
+.DS_Store

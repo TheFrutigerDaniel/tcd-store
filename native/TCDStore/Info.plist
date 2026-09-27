@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>TCDStore</string>
+    <key>CFBundleIdentifier</key>
+    <string>dev.tcd-store.TCDStore</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>TCD Store</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- 10.7 Lion is the floor. Everything in the binary is checked against
+         this at launch so a build that slips in a 10.9 API fails loudly in
+         development rather than on a user's machine. -->
+    <key>LSMinimumSystemVersion</key>
+    <string>10.7</string>
+
+    <key>NSHumanReadableCopyright</key>
+    <string>TCD Store</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+    <key>NSSupportsSuddenTermination</key>
+    <false/>
+
+    <!-- We only ever fetch package indexes and payloads over HTTP from the
+         sources the user adds. No analytics, no crash reporting, no phone home. -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+</dict>
+</plist>
