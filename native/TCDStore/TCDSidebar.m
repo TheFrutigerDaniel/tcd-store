@@ -15,6 +15,13 @@
 
 #import <math.h>   // M_PI, cos, sin for the star and gear glyphs
 
+/* A typed target rather than target/action. Dispatching through an untyped id
+   is what produced the "selector is unknown, may leak" warning, and the only
+   thing that ever listens here is the panel. */
+@protocol TCDDensityTrackTarget <NSObject>
+- (void)densityTrackChanged:(id)sender;
+@end
+
 /* TCDSidebarRows (below) builds rows by asking the panel for its plan, and
    those methods live in the panel's own @implementation further down. The
    declarations have to come first or the compiler cannot see them yet. */
@@ -299,13 +306,6 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
               operation:NSCompositeSourceOver fraction:1.0];
     }
 }
-@end
-
-/* A typed target rather than target/action. Dispatching through an untyped id
-   is what produced the "selector is unknown, may leak" warning, and the only
-   thing that ever listens here is the panel. */
-@protocol TCDDensityTrackTarget <NSObject>
-- (void)densityTrackChanged:(id)sender;
 @end
 
 @interface TCDDensityTrack : NSView
