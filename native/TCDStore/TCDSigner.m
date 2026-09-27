@@ -129,20 +129,21 @@ static NSString *const kTCDIdentity        = @"TCD Store";
 
 - (BOOL)payloadAtPathIsTrusted:(NSString *)payloadPath {
     if (!payloadPath.length) return NO;
+    // the API takes a URL, not a path string
+    CFURLRef url = (__bridge CFURLRef)[NSURL fileURLWithPath:payloadPath];
     SecStaticCodeRef sc = NULL;
-    if (SecStaticCodeCreateWithPath((CFStringRef)payloadPath, kTCDDefaultSearchMode, &sc)
-        != errSecSuccess) {
+    if (SecStaticCodeCreateWithPath(url, kTCDDefaultSearchMode, &sc) != errSecSuccess)
         return NO;
-    }
+
     SecCSFlags flags = kSecCSCheckAllArchitectures | kSecCSCheckNestedCode;
     SecRequirementRef req = NULL;
-    if (SecRequirementCreateWithString((CFStringRef)@"anchor apple generic", kTCDDefaultSearchMode, &req)
-        != errSecSuccess) {
+    if (SecRequirementCreateWithString((__bridge CFStringRef)@"anchor apple generic",
+                                       kTCDDefaultSearchMode, &req) != errSecSuccess) {
         CFRelease(sc);
         return NO;
     }
-    // the plain verdict call; the out-parameter variant is not needed here
-    OSStatus st = SecStaticCodeCheckValidity(sc, flags, req, NULL);
+    // three arguments; the variant that reports a CFError is a different call
+    OSStatus st = SecStaticCodeCheckValidity(sc, flags, req);
     CFRelease(req);
     CFRelease(sc);
     return st == errSecSuccess;

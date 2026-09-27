@@ -18,7 +18,7 @@
 /* TCDSidebarRows (below) builds rows by asking the panel for its plan, and
    those methods live in the panel's own @implementation further down. The
    declarations have to come first or the compiler cannot see them yet. */
-@interface TCDSidebar ()
+@interface TCDSidebar () <TCDDensityTrackTarget>
 - (NSArray *)rowPlan;
 - (BOOL)isRowActiveForRoute:(TCDSidebarRoute)route section:(NSString *)section;
 - (void)cardClicked:(id)sender;
@@ -301,11 +301,17 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 }
 @end
 
+/* A typed target rather than target/action. Dispatching through an untyped id
+   is what produced the "selector is unknown, may leak" warning, and the only
+   thing that ever listens here is the panel. */
+@protocol TCDDensityTrackTarget <NSObject>
+- (void)densityTrackChanged:(id)sender;
+@end
+
 @interface TCDDensityTrack : NSView
 @property (nonatomic, strong) NSMutableArray *buttons;
 @property (nonatomic, assign) TCDIconDensity chosenDensity;
-@property (nonatomic, weak) id trackTarget;
-@property (nonatomic, assign) SEL trackAction;
+@property (nonatomic, weak) id<TCDDensityTrackTarget> trackTarget;
 @end
 
 @implementation TCDDensityTrack
@@ -343,8 +349,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 
 - (void)clicked:(id)sender {
     self.chosenDensity = (TCDIconDensity)((TCDDensityButton *)sender).index;
-    if ([self.trackTarget respondsToSelector:self.trackAction])
-        [self.trackTarget performSelector:self.trackAction withObject:self];
+    [self.trackTarget densityTrackChanged:self];
 }
 
 - (void)layoutButtons {
@@ -412,7 +417,6 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
                 NSMakeRect(0.0, y, w, 40.0)];
             t.chosenDensity = o.density;
             t.trackTarget = o;
-            t.trackAction = @selector(densityTrackChanged:);
             [self addSubview:t];
             y += 40.0;
         } else {
