@@ -14,7 +14,6 @@
 @property (nonatomic, copy)   NSString *section;
 @property (nonatomic, copy)   NSString *query;
 @property (nonatomic, strong) NSMutableArray *history;  // route/section pairs
-@property (nonatomic, strong) NSScrollView *gridScroll;
 @property (nonatomic, assign) BOOL restoringHistory;
 @end
 
@@ -38,15 +37,9 @@
         NSMakeRect([TCDTheme sidebarWidth], 0.0,
                    NSWidth(frame) - [TCDTheme sidebarWidth], NSHeight(frame))];
     self.grid.delegate = self;
-    NSScrollView *gridScroll = [[NSScrollView alloc] initWithFrame:[self.grid frame]];
-    [gridScroll setDocumentView:self.grid];
-    [gridScroll setHasVerticalScroller:YES];
-    [gridScroll setAutohidesScrollers:YES];
-    [gridScroll setBorderType:NSNoBorder];
-    [gridScroll setDrawsBackground:NO];
-    [gridScroll setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [self addSubview:gridScroll];
-    self.gridScroll = gridScroll;
+    // The grid is an NSCollectionView, which scrolls itself; wrapping it in an
+    // NSScrollView is both unnecessary and wrong.
+    [self addSubview:self.grid];
 
     [self setFrameSize:NSMakeSize(NSWidth(frame), NSHeight(frame))];
     return self;
@@ -60,8 +53,7 @@
     // newSize is an NSSize; NSWidth/NSHeight take an NSRect, so the size's own
     // fields are read directly
     [self.sidebar setFrame:NSMakeRect(0.0, 0.0, sw, newSize.height)];
-    [self.gridScroll setFrame:NSMakeRect(sw, 0.0, newSize.width - sw, newSize.height)];
-    [self.grid setFrameSize:NSMakeSize(newSize.width - sw, NSHeight([self.grid frame]))];
+    [self.grid setFrame:NSMakeRect(sw, 0.0, newSize.width - sw, newSize.height)];
 }
 
 #pragma mark - data
@@ -212,9 +204,7 @@
         [self.delegate storeView:self didSelectPackage:pkg];
 }
 
-- (void)grid:(TCDStoreGrid *)grid didTapVersionsForPackage:(TCDPackage *)pkg
-                                              atPoint:(NSPoint)point {
-    (void)point;
+- (void)grid:(TCDStoreGrid *)grid didTapVersionsForPackage:(TCDPackage *)pkg {
     if ([self.delegate respondsToSelector:@selector(storeView:didTapVersionsForPackage:)])
         [self.delegate storeView:self didTapVersionsForPackage:pkg];
 }

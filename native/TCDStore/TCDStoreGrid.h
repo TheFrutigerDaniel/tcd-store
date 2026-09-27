@@ -2,43 +2,42 @@
 //  TCDStoreGrid.h
 //  TCD Store
 //
-//  The large-icon grid: 3, 4 or 5 tiles per row depending on the density, with
-//  128, 96 or 64pt icons to match. Tapping a tile opens the package; tapping
-//  the blue triangle in its corner unfolds the version menu.
+//  The large-icon grid.
 //
-//  NSCollectionView would be the obvious choice and cannot be used: it arrived
-//  in 10.10. So this is a view that lays its own tile views out into a grid and
-//  reports the height it needs back to the enclosing scroll view.
+//  This is an NSCollectionView. The first version hand-laid the tiles out in a
+//  clip view and grew the document view by hand, which is a lot of code to
+//  re-implement scrolling, item reuse and selection, and none of it was as
+//  good as the stock behaviour. NSCollectionView is not new technology here —
+//  it has existed since 10.5 — it is just much older than the rewrite people
+//  usually reach for.
 //
-//  10.7: no NSStackView, no NSCollectionView, no autolayout. Frames only.
+//  The tiles are plain: an image, a name, a version. The one piece of the
+//  original design that survives is the blue version triangle, which is a real
+//  NSButton so that its hover and press come from the system rather than from
+//  hand-written tracking areas.
 //
 
 #import <Cocoa/Cocoa.h>
 #import "TCDPackage.h"
-#import "TCDSidebar.h"          // TCDIconDensity lives with the sidebar control
+#import "TCDSidebar.h"          // TCDIconDensity
 
 @class TCDStoreGrid;
 
 @protocol TCDStoreGridDelegate <NSObject>
 - (void)grid:(TCDStoreGrid *)grid didSelectPackage:(TCDPackage *)pkg;
-- (void)grid:(TCDStoreGrid *)grid didTapVersionsForPackage:(TCDPackage *)pkg
-                                               atPoint:(NSPoint)point;
+- (void)grid:(TCDStoreGrid *)grid didTapVersionsForPackage:(TCDPackage *)pkg;
 - (void)grid:(TCDStoreGrid *)grid didChangeDensity:(TCDIconDensity)density;
 @end
 
 @interface TCDStoreGrid : NSView
 
 @property (nonatomic, weak) id<TCDStoreGridDelegate> delegate;
-@property (nonatomic, copy) NSArray *packages;     // TCDPackage
+@property (nonatomic, copy)   NSArray *packages;       // TCDPackage
 @property (nonatomic, assign) TCDIconDensity density;
-@property (nonatomic, copy) NSString *emptyMessage;
 
 - (void)reload;
-- (void)showEmptyStateWithMessage:(NSString *)message;
 
-/* Columns and icon size, exposed because the detail view and the status bar
-   both report the current layout. */
-- (NSUInteger)columns;
-- (CGFloat)iconSize;
+/* nil clears the message. Shown centred when the grid is empty. */
+- (void)showEmptyStateWithMessage:(NSString *)message;
 
 @end
