@@ -16,10 +16,19 @@ test/        headless functional test of the prototype
 
 ```bash
 cd prototype
-python3 -m http.server 8080
+python3 serve.py          # http://localhost:8080, caching disabled
 ```
 
-Then open <http://localhost:8080>. No build step, no dependencies.
+No build step, no dependencies.
+
+Use `serve.py` rather than `python3 -m http.server`. The built-in server sends
+`Last-Modified` with no `Cache-Control`, so browsers treat it as heuristically
+fresh and will reuse a cached stylesheet or script without revalidating. You
+edit `app.css`, reload, see the old version, and conclude nothing changed.
+`serve.py` sends `no-store` and suppresses `Last-Modified`, so a 304 is not
+possible and a plain reload always shows the current build. The asset URLs in
+`index.html` also carry a `?v=N` stamp; bump that number when you change
+`app.css`, `app.js` or `data.js`.
 
 It is a real, working prototype — not a mockup. Dark cards down the left
 (Store, then Categories), a large icon grid on the right.
