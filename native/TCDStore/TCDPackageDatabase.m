@@ -88,7 +88,7 @@ static NSString *const kSchemaVersion = @"1";
     if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) return NO;
     BOOL found = NO;
     while (sqlite3_step(st) == SQLITE_ROW) {
-        if ([[self textAtColumn:1] isEqualToString:column]) { found = YES; break; }
+        if ([[self textAtColumn:st column:1] isEqualToString:column]) { found = YES; break; }
     }
     sqlite3_finalize(st);
     return found;
@@ -178,14 +178,14 @@ static NSString *const kSchemaVersion = @"1";
    the statement is already prepared and nothing here touches it. It is an
    NSString because that is what every call site passes, and ARC will not
    convert NSString to const char * for you. */
-- (void)bindText:(NSString *)label index:(int)i value:(NSString *)v {
+- (void)bindText:(NSString *)label stmt:(sqlite3_stmt *)st index:(int)i value:(NSString *)v {
     (void)label;
-    if (v) sqlite3_bind_text(_db, i, [v UTF8String], -1, SQLITE_TRANSIENT);
-    else    sqlite3_bind_null(_db, i);
+    if (v) sqlite3_bind_text(st, i, [v UTF8String], -1, SQLITE_TRANSIENT);
+    else    sqlite3_bind_null(st, i);
 }
 
-- (NSString *)textAtColumn:(int)c {
-    const unsigned char *t = sqlite3_column_text(_db, c);
+- (NSString *)textAtColumn:(sqlite3_stmt *)st column:(int)c {
+    const unsigned char *t = sqlite3_column_text(st, c);
     return t ? [NSString stringWithUTF8String:(const char *)t] : nil;
 }
 
@@ -218,65 +218,65 @@ static NSString *const kSchemaVersion = @"1";
     if (sqlite3_prepare_v2(_db, sql, -1, &st, NULL) != SQLITE_OK) return;
 
     int i = 1;
-    [self bindText:"identifier" index:i++ value:p.identifier];
-    [self bindText:"source"     index:i++ value:p.sourceIdentifier];
-    [self bindText:"name"       index:i++ value:p.name];
-    [self bindText:"version"    index:i++ value:p.version];
-    [self bindText:"summary"    index:i++ value:p.packageSummary];
-    [self bindText:"description" index:i++ value:p.packageDescription];
-    [self bindText:"developer"  index:i++ value:p.developer];
-    [self bindText:"section"    index:i++ value:p.section];
-    [self bindText:"changelog"  index:i++ value:p.changelog];
-    [self bindText:"icon_url"   index:i++ value:p.iconURLString];
-    [self bindText:"download_url" index:i++ value:p.downloadURLString];
-    [self bindText:"sha256"     index:i++ value:p.sha256];
-    [self bindText:"install_prefix" index:i++ value:p.installPrefix];
-    sqlite3_bind_int(_db, i++, (int)p.type);
-    sqlite3_bind_int(_db, i++, (int)p.arch);
-    sqlite3_bind_int64(_db, i++, (sqlite3_int64)p.sizeBytes);
-    sqlite3_bind_int(_db, i++, (int)p.ratingCount);
-    sqlite3_bind_double(_db, i++, p.ratingAverage);
-    [self bindText:"min_os"     index:i++ value:p.minimumSystemVersion];
-    [self bindText:"depends"    index:i++ value:[self joinList:p.dependencies]];
-    [self bindText:"conflicts"  index:i++ value:[self joinList:p.conflicts]];
-    sqlite3_bind_int(_db, i++, p.installed ? 1 : 0);
-    [self bindText:"installed_version" index:i++ value:p.installedVersion];
-    sqlite3_bind_int(_db, i++, p.autoInstalled ? 1 : 0);
-    [self bindText:"receipt_id" index:i++ value:p.receiptID];
-    [self bindText:"available_versions" index:i++ value:TCDJSONString(p.availableVersions)];
+    [self bindText:@"identifier" stmt:st index:i++ value:p.identifier];
+    [self bindText:@"source"     stmt:st index:i++ value:p.sourceIdentifier];
+    [self bindText:@"name"       stmt:st index:i++ value:p.name];
+    [self bindText:@"version"    stmt:st index:i++ value:p.version];
+    [self bindText:@"summary"    stmt:st index:i++ value:p.packageSummary];
+    [self bindText:@"description" stmt:st index:i++ value:p.packageDescription];
+    [self bindText:@"developer"  stmt:st index:i++ value:p.developer];
+    [self bindText:@"section"    stmt:st index:i++ value:p.section];
+    [self bindText:@"changelog"  stmt:st index:i++ value:p.changelog];
+    [self bindText:@"icon_url"   stmt:st index:i++ value:p.iconURLString];
+    [self bindText:@"download_url" stmt:st index:i++ value:p.downloadURLString];
+    [self bindText:@"sha256"     stmt:st index:i++ value:p.sha256];
+    [self bindText:@"install_prefix" stmt:st index:i++ value:p.installPrefix];
+    sqlite3_bind_int(st, i++, (int)p.type);
+    sqlite3_bind_int(st, i++, (int)p.arch);
+    sqlite3_bind_int64(st, i++, (sqlite3_int64)p.sizeBytes);
+    sqlite3_bind_int(st, i++, (int)p.ratingCount);
+    sqlite3_bind_double(st, i++, p.ratingAverage);
+    [self bindText:@"min_os"     stmt:st index:i++ value:p.minimumSystemVersion];
+    [self bindText:@"depends"    stmt:st index:i++ value:[self joinList:p.dependencies]];
+    [self bindText:@"conflicts"  stmt:st index:i++ value:[self joinList:p.conflicts]];
+    sqlite3_bind_int(st, i++, p.installed ? 1 : 0);
+    [self bindText:@"installed_version" stmt:st index:i++ value:p.installedVersion];
+    sqlite3_bind_int(st, i++, p.autoInstalled ? 1 : 0);
+    [self bindText:@"receipt_id" stmt:st index:i++ value:p.receiptID];
+    [self bindText:@"available_versions" stmt:st index:i++ value:TCDJSONString(p.availableVersions)];
 
     sqlite3_step(st);
     sqlite3_finalize(st);
 }
 
-- (TCDPackage *)packageFromRow {
+- (TCDPackage *)packageFromRow:(sqlite3_stmt *)st {
     TCDPackage *p = [[TCDPackage alloc] init];
-    p.identifier         = [self textAtColumn:0];
-    p.sourceIdentifier   = [self textAtColumn:1];
-    p.name               = [self textAtColumn:2];
-    p.version            = [self textAtColumn:3];
-    p.packageSummary     = [self textAtColumn:4];
-    p.packageDescription = [self textAtColumn:5];
-    p.developer          = [self textAtColumn:6];
-    p.section            = [self textAtColumn:7];
-    p.changelog          = [self textAtColumn:8];
-    p.iconURLString      = [self textAtColumn:9];
-    p.downloadURLString  = [self textAtColumn:10];
-    p.sha256             = [self textAtColumn:11];
-    p.installPrefix      = [self textAtColumn:12];
-    p.type               = (TCDPackageType)sqlite3_column_int(_db, 13);
-    p.arch               = (TCDPackageArch)sqlite3_column_int(_db, 14);
-    p.sizeBytes          = (unsigned long long)sqlite3_column_int64(_db, 15);
-    p.ratingCount        = sqlite3_column_int(_db, 16);
-    p.ratingAverage      = sqlite3_column_double(_db, 17);
-    p.minimumSystemVersion = [self textAtColumn:18];
-    p.dependencies       = [self splitList:[self textAtColumn:19]];
-    p.conflicts          = [self splitList:[self textAtColumn:20]];
-    p.installed          = sqlite3_column_int(_db, 21) != 0;
-    p.installedVersion   = [self textAtColumn:22];
-    p.autoInstalled      = sqlite3_column_int(_db, 23) != 0;
-    p.receiptID          = [self textAtColumn:24];
-    p.availableVersions  = TCDJSONArray([self textAtColumn:25]);
+    p.identifier         = [self textAtColumn:st column:0];
+    p.sourceIdentifier   = [self textAtColumn:st column:1];
+    p.name               = [self textAtColumn:st column:2];
+    p.version            = [self textAtColumn:st column:3];
+    p.packageSummary     = [self textAtColumn:st column:4];
+    p.packageDescription = [self textAtColumn:st column:5];
+    p.developer          = [self textAtColumn:st column:6];
+    p.section            = [self textAtColumn:st column:7];
+    p.changelog          = [self textAtColumn:st column:8];
+    p.iconURLString      = [self textAtColumn:st column:9];
+    p.downloadURLString  = [self textAtColumn:st column:10];
+    p.sha256             = [self textAtColumn:st column:11];
+    p.installPrefix      = [self textAtColumn:st column:12];
+    p.type               = (TCDPackageType)sqlite3_column_int(st, 13);
+    p.arch               = (TCDPackageArch)sqlite3_column_int(st, 14);
+    p.sizeBytes          = (unsigned long long)sqlite3_column_int64(st, 15);
+    p.ratingCount        = sqlite3_column_int(st, 16);
+    p.ratingAverage      = sqlite3_column_double(st, 17);
+    p.minimumSystemVersion = [self textAtColumn:st column:18];
+    p.dependencies       = [self splitList:[self textAtColumn:st column:19]];
+    p.conflicts          = [self splitList:[self textAtColumn:st column:20]];
+    p.installed          = sqlite3_column_int(st, 21) != 0;
+    p.installedVersion   = [self textAtColumn:st column:22];
+    p.autoInstalled      = sqlite3_column_int(st, 23) != 0;
+    p.receiptID          = [self textAtColumn:st column:24];
+    p.availableVersions  = TCDJSONArray([self textAtColumn:st column:25]);
     return p;
 }
 
@@ -297,10 +297,10 @@ static NSString *const kSchemaVersion = @"1";
     }
     int i = 1;
     for (id a in arguments) {
-        if ([a isKindOfClass:[NSNumber class]]) sqlite3_bind_int64(_db, i++, [a longLongValue]);
-        else [self bindText:sql index:i++ value:a];
+        if ([a isKindOfClass:[NSNumber class]]) sqlite3_bind_int64(st, i++, [a longLongValue]);
+        else [self bindText:sql stmt:st index:i++ value:a];
     }
-    while (sqlite3_step(st) == SQLITE_ROW) [out addObject:[self packageFromRow]];
+    while (sqlite3_step(st) == SQLITE_ROW) [out addObject:[self packageFromRow:st]];
     sqlite3_finalize(st);
     return out;
 }
@@ -322,8 +322,8 @@ static NSString *const kSelectColumns =
     NSString *sql = [NSString stringWithFormat:
                      @"SELECT %@ FROM packages WHERE identifier=? LIMIT 1", kSelectColumns];
     if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) return nil;
-    [self bindText:sql index:1 value:identifier];
-    if (sqlite3_step(st) == SQLITE_ROW) [r addObject:[self packageFromRow]];
+    [self bindText:sql stmt:st index:1 value:identifier];
+    if (sqlite3_step(st) == SQLITE_ROW) [r addObject:[self packageFromRow:st]];
     sqlite3_finalize(st);
     return r.count ? r[0] : nil;
 }
@@ -372,12 +372,12 @@ static NSString *const kSelectColumns =
             -1, &st, NULL) != SQLITE_OK) return out;
     while (sqlite3_step(st) == SQLITE_ROW) {
         [out addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-            [self textAtColumn:0], @"identifier",
-            [self textAtColumn:1] ?: @"", @"name",
-            [self textAtColumn:2] ?: @"", @"url",
-            [self textAtColumn:3] ?: @"third-party", @"kind",
-            [NSNumber numberWithDouble:sqlite3_column_double(_db, 4)], @"lastSync",
-            [NSNumber numberWithInt:sqlite3_column_int(_db, 5)], @"lastStatus", nil]];
+            [self textAtColumn:st column:0], @"identifier",
+            [self textAtColumn:st column:1] ?: @"", @"name",
+            [self textAtColumn:st column:2] ?: @"", @"url",
+            [self textAtColumn:st column:3] ?: @"third-party", @"kind",
+            [NSNumber numberWithDouble:sqlite3_column_double(st, 4)], @"lastSync",
+            [NSNumber numberWithInt:sqlite3_column_int(st, 5)], @"lastStatus", nil]];
     }
     sqlite3_finalize(st);
     return out;
@@ -396,12 +396,12 @@ static NSString *const kSelectColumns =
     if (sqlite3_prepare_v2(_db,
             "INSERT OR REPLACE INTO sources (identifier,name,url,kind,added,last_status)"
             " VALUES (?,?,?,?,?,0)", -1, &st, NULL) != SQLITE_OK) return;
-    [self bindText:"x" index:1 value:source[@"identifier"]];
-    [self bindText:"x" index:2 value:source[@"name"]];
-    [self bindText:"x" index:3 value:source[@"url"]];
+    [self bindText:@"x" stmt:st index:1 value:source[@"identifier"]];
+    [self bindText:@"x" stmt:st index:2 value:source[@"name"]];
+    [self bindText:@"x" stmt:st index:3 value:source[@"url"]];
     NSString *kind = source[@"kind"] ?: @"third-party";
-    [self bindText:"x" index:4 value:kind];
-    sqlite3_bind_double(_db, 5, [[NSDate date] timeIntervalSince1970]);
+    [self bindText:@"x" stmt:st index:4 value:kind];
+    sqlite3_bind_double(st, 5, [[NSDate date] timeIntervalSince1970]);
     sqlite3_step(st);
     sqlite3_finalize(st);
 }
@@ -411,7 +411,7 @@ static NSString *const kSelectColumns =
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, "DELETE FROM sources WHERE identifier=?", -1, &st, NULL)
         != SQLITE_OK) return;
-    [self bindText:"x" index:1 value:identifier];
+    [self bindText:@"x" stmt:st index:1 value:identifier];
     sqlite3_step(st);
     sqlite3_finalize(st);
 }
@@ -422,9 +422,9 @@ static NSString *const kSelectColumns =
     if (sqlite3_prepare_v2(_db,
             "UPDATE sources SET index_blob=?, last_sync=?, last_status=1 WHERE identifier=?",
             -1, &st, NULL) != SQLITE_OK) return;
-    sqlite3_bind_blob(_db, 1, data.bytes, (int)data.length, SQLITE_TRANSIENT);
-    sqlite3_bind_double(_db, 2, [[NSDate date] timeIntervalSince1970]);
-    [self bindText:"x" index:3 value:identifier];
+    sqlite3_bind_blob(st, 1, data.bytes, (int)data.length, SQLITE_TRANSIENT);
+    sqlite3_bind_double(st, 2, [[NSDate date] timeIntervalSince1970]);
+    [self bindText:@"x" stmt:st index:3 value:identifier];
     sqlite3_step(st);
     sqlite3_finalize(st);
 }
@@ -434,11 +434,11 @@ static NSString *const kSelectColumns =
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, "SELECT index_blob FROM sources WHERE identifier=?",
                            -1, &st, NULL) != SQLITE_OK) return nil;
-    [self bindText:"x" index:1 value:identifier];
+    [self bindText:@"x" stmt:st index:1 value:identifier];
     NSData *data = nil;
     if (sqlite3_step(st) == SQLITE_ROW) {
-        const void *bytes = sqlite3_column_blob(_db, 0);
-        int len = sqlite3_column_bytes(_db, 0);
+        const void *bytes = sqlite3_column_blob(st, 0);
+        int len = sqlite3_column_bytes(st, 0);
         if (bytes && len > 0) data = [NSData dataWithBytes:bytes length:(NSUInteger)len];
     }
     sqlite3_finalize(st);

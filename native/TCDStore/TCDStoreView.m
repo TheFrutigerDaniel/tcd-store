@@ -48,7 +48,7 @@
     [self addSubview:gridScroll];
     self.gridScroll = gridScroll;
 
-    [self setFrameSize:frame];
+    [self setFrameSize:NSMakeSize(NSWidth(frame), NSHeight(frame))];
     return self;
 }
 
@@ -57,9 +57,11 @@
 - (void)setFrameSize:(NSSize)newSize {
     [super setFrameSize:newSize];
     CGFloat sw = [TCDTheme sidebarWidth];
-    [self.sidebar setFrame:NSMakeRect(0.0, 0.0, sw, NSHeight(newSize))];
-    [self.gridScroll setFrame:NSMakeRect(sw, 0.0, NSWidth(newSize) - sw, NSHeight(newSize))];
-    [self.grid setFrameSize:NSMakeSize(NSWidth(newSize) - sw, NSHeight([self.grid frame]))];
+    // newSize is an NSSize; NSWidth/NSHeight take an NSRect, so the size's own
+    // fields are read directly
+    [self.sidebar setFrame:NSMakeRect(0.0, 0.0, sw, newSize.height)];
+    [self.gridScroll setFrame:NSMakeRect(sw, 0.0, newSize.width - sw, newSize.height)];
+    [self.grid setFrameSize:NSMakeSize(newSize.width - sw, NSHeight([self.grid frame]))];
 }
 
 #pragma mark - data
@@ -128,10 +130,11 @@
         // search is case-insensitive and matches name, identifier and summary
         NSMutableArray *hits = [NSMutableArray array];
         for (TCDPackage *p in self.allPackages) {
-            NSString *n = p.name.lowercaseString;
-            if ([n containsString:self.query.lowercaseString] ||
-                [p.identifier.lowercaseString containsString:self.query.lowercaseString] ||
-                [(p.packageSummary ?: @"") containsString:self.query.lowercaseString])
+            // the substring test is 10.10; -rangeOfString: is the 10.7 spelling
+            NSString *q = self.query.lowercaseString;
+            if ([p.name.lowercaseString rangeOfString:q].location != NSNotFound ||
+                [p.identifier.lowercaseString rangeOfString:q].location != NSNotFound ||
+                [(p.packageSummary ?: @"") rangeOfString:q].location != NSNotFound)
                 [hits addObject:p];
         }
         items = hits;
@@ -192,7 +195,7 @@
 - (void)sidebar:(TCDSidebar *)sidebar didSelectRoute:(TCDSidebarRoute)route
                                           section:(NSString *)section {
     if ([self.delegate respondsToSelector:@selector(storeViewDidSelectRoute:route:section:)])
-        [self.delegate storeView:self didSelectRoute:route section:section];
+        [self.delegate storeViewDidSelectRoute:self route:route section:section];
 }
 
 - (void)sidebar:(TCDSidebar *)sidebar didSelectDensity:(TCDIconDensity)density {

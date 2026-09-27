@@ -35,15 +35,15 @@ typedef NS_ENUM(NSInteger, TCDInstallStage) {
 @end
 
 @interface TCDInstallSession : NSObject
-@property (nonatomic, readonly) NSArray *steps;
-@property (nonatomic, readonly) TCDPackage *primaryPackage;
+@property (nonatomic, readonly, strong) NSArray *steps;
+@property (nonatomic, readonly, strong) TCDPackage *primaryPackage;
 @property (nonatomic, readonly) BOOL finished;
 @property (nonatomic, readonly) BOOL cancelled;
-@property (nonatomic, readonly) NSString *failureReason;
+@property (nonatomic, readonly, copy) NSString *failureReason;
 /* the exact version being installed, and how it relates to what is on disk */
-@property (nonatomic, readonly) NSString *targetVersion;
+@property (nonatomic, readonly, copy) NSString *targetVersion;
 @property (nonatomic, readonly) TCDVersionRelation relation;
-@property (nonatomic, readonly) NSString *verb;   // Install / Update / Downgrade / Reinstall
+@property (nonatomic, readonly, copy) NSString *verb;   // Install / Update / Downgrade / Reinstall
 @property (nonatomic, copy) void (^stepChanged)(TCDInstallStep *step);
 @property (nonatomic, copy) void (^logLine)(NSString *line, BOOL isError);
 - (void)cancel;

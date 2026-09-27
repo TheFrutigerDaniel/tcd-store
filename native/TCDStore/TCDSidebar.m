@@ -216,7 +216,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
                     self.activeRow ? [TCDTheme white] : [TCDTheme cardIcon]);
         [img drawInRect:NSMakeRect(NSMinX(content), NSMidY(content) - 7.5, 15.0, 15.0)
                fromRect:NSZeroRect
-              operation:NSCompositingOperationSourceOver
+              operation:NSCompositeSourceOver
                fraction:1.0];
     }
 
@@ -250,6 +250,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 @property (nonatomic, strong) NSImage *chosenImage;
 @property (nonatomic, assign) BOOL chosen;
 @property (nonatomic, assign) BOOL pressed;   // NSButton has no highlight of its own
+@property (nonatomic, assign) NSInteger index; // which density this button is
 @end
 
 @implementation TCDDensityButton
@@ -287,11 +288,11 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
     }
     NSImage *img = self.chosen ? self.chosenImage : self.idleImage;
     if (img) {
-        NSRect ir = [img size];
+        NSSize ir = [img size];
         ir.origin.x = NSMidX(r) - NSWidth(ir) / 2.0;
         ir.origin.y = NSMidY(r) - NSHeight(ir) / 2.0;
         [img drawInRect:ir fromRect:NSZeroRect
-              operation:NSCompositingOperationSourceOver fraction:1.0];
+              operation:NSCompositeSourceOver fraction:1.0];
     }
 }
 @end
@@ -317,7 +318,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
         TCDDensityButton *b = [[TCDDensityButton alloc] initWithFrame:NSZeroRect];
         b.idleImage  = TCDDensityImage(columns[i], [TCDTheme sideRowIcon]);
         b.chosenImage = TCDDensityImage(columns[i], [TCDTheme white]);
-        b.tag = i;
+        b.index = i;
         [b setTarget:self];
         [b setAction:@selector(clicked:)];
         [b setToolTip:tips[i]];
@@ -337,7 +338,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 }
 
 - (void)clicked:(id)sender {
-    self.chosenDensity = (TCDIconDensity)[sender tag];
+    self.chosenDensity = (TCDIconDensity)((TCDDensityButton *)sender).index;
     if ([self.trackTarget respondsToSelector:self.trackAction])
         [self.trackTarget performSelector:self.trackAction withObject:self];
 }
@@ -417,7 +418,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
             c.sub = item[@"s"];
             c.glyph = item[@"i"];
             c.activeRow = [item[@"on"] boolValue];
-            c.tag = [item[@"row"] integerValue];
+            c.row = [item[@"row"] integerValue];
             __weak TCDSidebar *weakOwner = o;
             // the rows view already owns the card as a subview; a strong
             // capture here would keep every card alive across a relayout
@@ -475,7 +476,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 
 - (void)setFrameSize:(NSSize)newSize {
     [super setFrameSize:newSize];
-    [self.rows setFrameSize:NSMakeSize(NSWidth(newSize), NSHeight([self.rows frame]))];
+    [self.rows setFrameSize:NSMakeSize(newSize.width, NSHeight([self.rows frame]))];
     [self.rows relayout];
 }
 
@@ -536,7 +537,7 @@ static NSImage *TCDDensityImage(NSUInteger columns, NSColor *color) {
 
 - (void)cardClicked:(id)sender {
     TCDSidebarCard *c = (TCDSidebarCard *)sender;
-    NSInteger row = c.tag;
+    NSInteger row = c.row;
     NSDictionary *item = nil;
     for (NSDictionary *p in [self rowPlan]) {
         if ([p[@"k"] isEqualToString:@"c"] && [p[@"row"] integerValue] == row) {

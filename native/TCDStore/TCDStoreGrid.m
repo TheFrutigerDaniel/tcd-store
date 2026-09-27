@@ -121,7 +121,7 @@
 
     // The grid is its scroll view's document view, so growing itself is how the
     // content gets taller than the window.
-    CGFloat wanted = self.tiles.count ? self.contentHeight : NSHeight([self superview]);
+    CGFloat wanted = self.tiles.count ? self.contentHeight : NSHeight([[self superview] frame]);
     if (NSHeight([self frame]) - wanted > 0.5 ||
         wanted - NSHeight([self frame]) > 0.5)
         [super setFrameSize:NSMakeSize(NSWidth([self frame]), wanted)];

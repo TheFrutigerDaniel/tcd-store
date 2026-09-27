@@ -9,6 +9,7 @@
 #import <Security/SecStaticCode.h>
 #import <Security/SecRequirement.h>
 #import <Security/CSCommon.h>   // kSecCSCheckAllArchitectures, kSecCSCheckNestedCode
+#import <Security/CSBase.h>     // CSSearchMode, and therefore kSecCSDefault
 #import <errno.h>              // ENOENT
 
 static NSString *const kTCDSigningPolicyKey = @"TCDSigningPolicy";
@@ -136,8 +137,8 @@ static NSString *const kTCDIdentity        = @"TCD Store";
         CFRelease(sc);
         return NO;
     }
-    SecStaticCodeCheckValidityWithErrors result = { NULL };  // one CFErrorRef field
-    OSStatus st = SecStaticCodeCheckValidity(sc, flags, req, &result);
+    // the plain verdict call; the out-parameter variant is not needed here
+    OSStatus st = SecStaticCodeCheckValidity(sc, flags, req, NULL);
     CFRelease(req);
     CFRelease(sc);
     return st == errSecSuccess;

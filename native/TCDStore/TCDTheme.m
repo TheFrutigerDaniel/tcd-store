@@ -4,6 +4,7 @@
 //
 
 #import "TCDTheme.h"
+#import <stdlib.h>   // malloc/free for the gradient stop buffer
 
 @implementation TCDTheme
 
@@ -149,9 +150,16 @@
         [colors addObject:stops[i]];
         [locations addObject:stops[i + 1]];
     }
+    // NSGradient takes a const CGFloat *, not an array, so the stops are
+    // unpacked into a C buffer first
+    NSUInteger n = locations.count;
+    CGFloat *where = (CGFloat *)malloc(sizeof(CGFloat) * (n ? n : 1));
+    for (NSUInteger i = 0; i < n; i++)
+        where[i] = (CGFloat)[[locations objectAtIndex:i] doubleValue];
     NSGradient *g = [[NSGradient alloc] initWithColors:colors
-                                             atLocations:locations
+                                             atLocations:where
                                               colorSpace:[NSColorSpace genericRGBColorSpace]];
+    free(where);
     [g drawInRect:rect angle:90.0];
 }
 
@@ -216,8 +224,8 @@
               color:(NSColor *)color
              center:(BOOL)center {
     if (!s.length) return;
-    NSDictionary *attrs = @{ NSFontAttributeName: font,
-                             NSForegroundColorAttributeName: color };
+    NSMutableDictionary *attrs = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+        font, NSFontAttributeName, color, NSForegroundColorAttributeName, nil];
     NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
     ps.alignment = center ? NSCenterTextAlignment : NSLeftTextAlignment;
     ps.lineBreakMode = NSLineBreakByTruncatingTail;
