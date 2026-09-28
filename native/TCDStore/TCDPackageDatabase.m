@@ -223,7 +223,7 @@ static NSString *const kSchemaVersion = @"1";
         " icon_url,download_url,sha256,install_prefix,type,arch,size_bytes,rating_count,"
         " rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,"
         " receipt_id,available_versions)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, sql, -1, &st, NULL) != SQLITE_OK) {
         // Was silent. A statement that will not prepare fails on every row, so

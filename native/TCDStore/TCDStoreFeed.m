@@ -88,7 +88,9 @@
     NSString *trimmedURL = [url stringByTrimmingCharactersInSet:
                                [NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSURL *parsed = trimmedURL.length ? [NSURL URLWithString:trimmedURL] : nil;
-    if (!parsed.scheme || !parsed.host.length && !parsed.isFileURL) {
+    // Either no scheme at all, or a scheme with neither a host nor a file
+    // path: neither can be fetched.
+    if (!parsed.scheme || (!parsed.host.length && !parsed.isFileURL)) {
         NSLog(@"TCD: addSource: '%@' is not a usable URL", url);
         return NO;
     }
