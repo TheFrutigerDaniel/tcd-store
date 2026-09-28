@@ -7,6 +7,7 @@
 #import "TCDSettingsWindowController.h"
 #import "TCDCatalogueEditorWindowController.h"
 #import "TCDCatalogueManager.h"
+#import "TCDStoreFeed.h"
 
 @interface AppDelegate ()
 @property (strong) NSWindow                              *window;
@@ -118,6 +119,11 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+    // Before the window is built. TCDStoreViewController reads the database in
+    // its initialiser, so anything prepared after this point misses the first
+    // paint and the grid comes up empty until something forces a reload.
+    [[TCDStoreFeed sharedFeed] prepareStore];
+
     NSRect cr = NSMakeRect(0, 0, 980, 580);
     NSUInteger style = NSTitledWindowMask | NSClosableWindowMask
                      | NSMiniaturizableWindowMask | NSResizableWindowMask;
