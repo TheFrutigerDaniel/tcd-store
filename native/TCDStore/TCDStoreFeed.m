@@ -231,7 +231,9 @@
         if (cached.length) {
             NSLog(@"TCD: %@: refresh failed (%@), using the cached index",
                   identifier, message ?: @"unknown");
-            [self ingestData:cached forSource:identifier];
+            [self ingestData:cached
+                     forSource:identifier
+                baseURLString:[[self db] sourceWithIdentifier:identifier][@"url"]];
         } else {
             NSLog(@"TCD: %@: refresh failed (%@), no cached index",
                   identifier, message ?: @"unknown");
@@ -242,7 +244,10 @@
         return;
     }
 
-    if ([self ingestData:data forSource:identifier]) {
+    NSDictionary *row = [db sourceWithIdentifier:identifier];
+    if ([self ingestData:data
+                forSource:identifier
+           baseURLString:[row objectForKey:@"url"]]) {
         // Kept so a later failure has something to fall back to.
         [db storeIndexData:data forSource:identifier];
         [db markSourceWithIdentifier:identifier synced:YES message:@""];
@@ -265,18 +270,22 @@
 /* One source, one transaction: the index is replaced or it is not. Returns NO
    when the index held nothing usable, which the caller records as a failure
    rather than a successful empty refresh. */
-- (BOOL)ingestData:(NSData *)data forSource:(NSString *)sourceIdentifier {
+- (BOOL)ingestData:(NSData *)data
+         forSource:(NSString *)sourceIdentifier
+        baseURLString:(NSString *)baseURLString {
     if (!data.length) return NO;
     TCDPackageDatabase *db = [self db];
     if (!db) return NO;
 
     NSArray *skipped = nil;
     NSArray *packages = [TCDIndexParser parseIndexData:data
+                                      baseURLString:baseURLString
                                      sourceIdentifier:sourceIdentifier
                                           skippedOut:&skipped];
-    NSLog(@"TCD: %@: %lu byte(s) -> %lu package(s), %lu skipped",
+    NSLog(@"TCD: %@: %lu byte(s) -> %lu package(s), %lu skipped, first payload %@",
           sourceIdentifier, (unsigned long)data.length,
-          (unsigned long)packages.count, (unsigned long)skipped.count);
+          (unsigned long)packages.count, (unsigned long)skipped.count,
+          [packages.firstObject downloadURLString] ?: @"(none)");
     if (!packages.count) return NO;
 
     [db beginTransaction];

@@ -8,6 +8,7 @@
 @implementation TCDIndexParser
 
 + (NSArray *)parseIndexData:(NSData *)data
+               baseURLString:(NSString *)baseURLString
           sourceIdentifier:(NSString *)sourceIdentifier
                skippedOut:(NSArray **)skippedOut {
     if (![data length]) {
@@ -19,12 +20,15 @@
         text = [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
     }
     NSArray *bad = nil;
-    NSArray *out = [self parseIndexString:text sourceIdentifier:sourceIdentifier];
+    NSArray *out = [self parseIndexString:text
+                 baseURLString:baseURLString
+            sourceIdentifier:sourceIdentifier];
     if (skippedOut) *skippedOut = bad;
     return out;
 }
 
 + (NSArray *)parseIndexString:(NSString *)text
+                baseURLString:(NSString *)baseURLString
            sourceIdentifier:(NSString *)sourceIdentifier {
     NSMutableArray *stanzas = [NSMutableArray array];
     if (!text.length) return [NSArray array];
@@ -38,7 +42,8 @@
         if (fields.count) {
             TCDPackage *p = [self packageFromFields:fields
                                           description:description
-                                     sourceIdentifier:sourceIdentifier];
+                                     baseURLString:baseURLString
+                                    sourceIdentifier:sourceIdentifier];
             if (p) [stanzas addObject:p];
         }
         [fields removeAllObjects];
@@ -139,7 +144,8 @@
 
 + (TCDPackage *)packageFromFields:(NSDictionary *)f
                       description:(NSString *)description
-                 sourceIdentifier:(NSString *)sourceIdentifier {
+                    baseURLString:(NSString *)baseURLString
+                   sourceIdentifier:(NSString *)sourceIdentifier {
     NSString *name = f[@"Package"];
     if (!name.length) return nil;                     // unusable stanza
     NSString *version = f[@"Version"];
@@ -156,7 +162,11 @@
     p.packageDescription = description.length ? description : p.packageSummary;
     p.changelog          = f[@"TCD-Changelog"];
     p.iconURLString      = f[@"TCD-Icon"];
-    p.downloadURLString  = f[@"Filename"];
+    // A Cydia index carries Filename: *relative to the source*, so it has
+    // to be resolved against where the index itself came from. Used raw it
+    // is not a URL at all, and nothing can fetch it.
+    p.downloadURLString  = [self resolveFilename:f[@"Filename"]
+                                 againstBase:baseURLString];
     // spelled out rather than folded into one bracket expression: an elvis
     // operator sitting inside brackets right after a subscript trips clang's
     // optional-chaining parse, and two fields with a fallback reads better than
@@ -201,6 +211,21 @@
    Version constraints are parsed away here on purpose: the prototype's
    resolver treats a dependency as satisfied by any version of the named
    package, and tightening that is a resolver change, not a parser change. */
+/* Filename: is relative to the source index. A value that is already
+   absolute is left alone; with no base to resolve against the raw value is
+   better than a wrong guess. */
++ (NSString *)resolveFilename:(NSString *)filename againstBase:(NSString *)base {
+    if (!filename.length) return @"";
+    NSURL *candidate = [NSURL URLWithString:filename];
+    if (candidate.scheme.length) return filename;
+    if (!base.length) return filename;
+    NSURL *baseURL = [NSURL URLWithString:base];
+    if (!baseURL.scheme.length) return filename;
+    NSURL *resolved = [NSURL URLWithString:filename relativeToURL:baseURL];
+    NSString *absolute = resolved.absoluteURL.absoluteString;
+    return absolute.length ? absolute : filename;
+}
+
 + (NSArray *)splitList:(NSString *)s {
     if (!s.length) return [NSArray array];
     NSMutableArray *out = [NSMutableArray array];
