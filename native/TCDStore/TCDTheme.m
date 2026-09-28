@@ -190,8 +190,8 @@
     // rather than just the segment between the two points.
     [g drawFromPoint:start
               toPoint:end
-             options:NSGradientDrawsBeforeStartLocation |
-                     NSGradientDrawsAfterEndLocation];
+             options:NSGradientDrawsBeforeStartingLocation |
+                     NSGradientDrawsAfterEndingLocation];
 }
 
 + (void)fillRoundedGradient:(NSRect)rect
