@@ -23,7 +23,11 @@ static NSArray *TCDJSONArray(NSString *s) {
     return [a isKindOfClass:[NSArray class]] ? a : [NSArray array];
 }
 
-static NSString *const kSchemaVersion = @"1";
+// 1 = original schema. 2 adds sources.last_error, so a store created by an
+// earlier build gets the column: openWithError: skips the migration block
+// entirely when the stored version already matches, and without the bump the
+// ALTER never ran and every SELECT naming last_error failed to prepare.
+static NSString *const kSchemaVersion = @"2";
 
 @interface TCDPackageDatabase () {
     sqlite3 *_db;
@@ -343,7 +347,10 @@ static NSString *const kSelectColumns =
     NSString *sql = [NSString stringWithFormat:
                      @"SELECT %@ FROM packages WHERE identifier=? AND source=? LIMIT 1",
                      kSelectColumns];
-    if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) return nil;
+    if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) {
+        NSLog(@"TCD: packageWithIdentifier: could not prepare: %s", sqlite3_errmsg(_db));
+        return nil;
+    }
     [self bindText:sql stmt:st index:1 value:identifier];
     [self bindText:sql stmt:st index:2 value:sourceIdentifier];
     TCDPackage *pkg = nil;
@@ -393,7 +400,12 @@ static NSString *const kSelectColumns =
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db,
             "SELECT identifier,name,url,kind,last_sync,last_status,last_error FROM sources ORDER BY name",
-            -1, &st, NULL) != SQLITE_OK) return out;
+            -1, &st, NULL) != SQLITE_OK) {
+        // This is how a missing column looked: every source vanished from the
+        // list, and the one caller that cared had nothing to say about it.
+        NSLog(@"TCD: allSources: could not prepare: %s", sqlite3_errmsg(_db));
+        return out;
+    }
     while (sqlite3_step(st) == SQLITE_ROW) {
         [out addObject:[NSDictionary dictionaryWithObjectsAndKeys:
             [self textAtColumn:st column:0], @"identifier",
@@ -438,7 +450,10 @@ static NSString *const kSelectColumns =
     if (!_db) return;
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, "DELETE FROM sources WHERE identifier=?", -1, &st, NULL)
-        != SQLITE_OK) return;
+        != SQLITE_OK) {
+        NSLog(@"TCD: removeSource: could not prepare: %s", sqlite3_errmsg(_db));
+        return;
+    }
     [self bindText:@"x" stmt:st index:1 value:identifier];
     sqlite3_step(st);
     sqlite3_finalize(st);
@@ -454,7 +469,12 @@ static NSString *const kSelectColumns =
 
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, "DELETE FROM packages WHERE identifier=?", -1, &st, NULL)
-        != SQLITE_OK) return 0;
+        != SQLITE_OK) {
+        // Returning 0 here reads as "nothing to remove", which is how a source
+        // removal appears to do nothing at all.
+        NSLog(@"TCD: removePackages: could not prepare: %s", sqlite3_errmsg(_db));
+        return 0;
+    }
     NSUInteger removed = 0;
     for (NSString *identifier in found) {
         sqlite3_reset(st);
@@ -494,7 +514,10 @@ static NSString *const kSelectColumns =
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db,
             "UPDATE sources SET index_blob=?, last_sync=?, last_status=1 WHERE identifier=?",
-            -1, &st, NULL) != SQLITE_OK) return;
+            -1, &st, NULL) != SQLITE_OK) {
+        NSLog(@"TCD: storeIndexData: could not prepare: %s", sqlite3_errmsg(_db));
+        return;
+    }
     sqlite3_bind_blob(st, 1, data.bytes, (int)data.length, SQLITE_TRANSIENT);
     sqlite3_bind_double(st, 2, [[NSDate date] timeIntervalSince1970]);
     [self bindText:@"x" stmt:st index:3 value:identifier];
@@ -506,7 +529,10 @@ static NSString *const kSelectColumns =
     if (!_db) return nil;
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db, "SELECT index_blob FROM sources WHERE identifier=?",
-                           -1, &st, NULL) != SQLITE_OK) return nil;
+                           -1, &st, NULL) != SQLITE_OK) {
+        NSLog(@"TCD: indexDataForSource: could not prepare: %s", sqlite3_errmsg(_db));
+        return nil;
+    }
     [self bindText:@"x" stmt:st index:1 value:identifier];
     NSData *data = nil;
     if (sqlite3_step(st) == SQLITE_ROW) {
