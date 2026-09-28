@@ -6,6 +6,9 @@
 #import "TCDStoreGrid.h"
 #import "TCDTheme.h"
 
+// Cocoa.h does not pull this one in on the 10.9 SDK
+#import <AppKit/NSCollectionView.h>
+
 #pragma mark - the version triangle
 
 /* A real button, so the hover, the press and the cursor all come from AppKit.
@@ -80,7 +83,7 @@
                              NSWidth(b) - 8.0, 15.0);
     NSRect sub = NSMakeRect(4.0, NSMinY(name) - 12.0, NSWidth(b) - 8.0, 13.0);
 
-    NSMutableParagraphStyle *centre = [[[NSMutableParagraphStyle alloc] init] autorelease];
+    NSMutableParagraphStyle *centre = [[NSMutableParagraphStyle alloc] init];
     [centre setAlignment:NSCenterTextAlignment];
     [centre setLineBreakMode:NSLineBreakByTruncatingTail];
 
@@ -158,8 +161,8 @@
         [NSArray arrayWithObject:[TCDTheme content]]];
     [self addSubview:self.collection];
 
-    self.emptyLabel = [[[NSTextField alloc] initWithFrame:
-        NSMakeRect(0.0, 0.0, 300.0, 20.0)] autorelease];
+    self.emptyLabel = [[NSTextField alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 300.0, 20.0)];
     [self.emptyLabel setBezeled:NO];
     [self.emptyLabel setDrawsBackground:NO];
     [self.emptyLabel setEditable:NO];
@@ -258,7 +261,7 @@
 - (id)collectionView:(NSCollectionView *)collectionView
     representedObjectAtIndexPath:(NSIndexPath *)indexPath {
     (void)collectionView;
-    NSInteger i = (NSInteger)[indexPath index];
+    NSInteger i = (NSInteger)[indexPath indexAtPosition:0];
     if (i < 0 || (NSUInteger)i >= self.packages.count) return nil;
     return [self.packages objectAtIndex:(NSUInteger)i];
 }
@@ -270,18 +273,16 @@
     if (!pkg) return nil;
 
     CGFloat side = NSWidth([collectionView itemSize]) - 8.0;
-    TCDTileView *tile = [[[TCDTileView alloc]
-        initWithFrame:NSMakeRect(0.0, 0.0, side, NSHeight([collectionView itemSize]))]
-        autorelease];
+    TCDTileView *tile = [[TCDTileView alloc]
+        initWithFrame:NSMakeRect(0.0, 0.0, side, NSHeight([collectionView itemSize]))];
     [tile setAutoresizingMask:NSViewNotSizable];
     tile.package = pkg;
     tile.iconSize = [self iconSize];
     tile.compact = (self.density == TCDIconDensitySmall);
 
-    CGFloat caretSide = self.compact ? 14.0 : 18.0;
-    TCDVersionCaret *caret = [[[TCDVersionCaret alloc]
-        initWithFrame:NSMakeRect(side - caretSide - 2.0, 2.0, caretSide, caretSide)]
-        autorelease];
+    CGFloat caretSide = (self.density == TCDIconDensitySmall) ? 14.0 : 18.0;
+    TCDVersionCaret *caret = [[TCDVersionCaret alloc]
+        initWithFrame:NSMakeRect(side - caretSide - 2.0, 2.0, caretSide, caretSide)];
     [caret setBezelStyle:NSRegularSquareBezelStyle];
     [caret setTitle:@""];
     [caret setToolTip:[NSString stringWithFormat:@"Versions available for %@",
@@ -292,8 +293,8 @@
     [tile addSubview:caret];
     [tile setNeedsDisplay:YES];
 
-    NSCollectionViewItem *item = [[[NSCollectionViewItem alloc]
-        initWithFrame:tile.frame] autorelease];
+    NSCollectionViewItem *item = [[NSCollectionViewItem alloc]
+        initWithFrame:tile.frame];
     [item setView:tile];
     [item setRepresentedObject:pkg];
     return item;
@@ -314,7 +315,7 @@
     (void)collectionView;
     NSIndexPath *first = [indexPaths anyObject];
     if (!first) return;
-    NSInteger i = (NSInteger)[first index];
+    NSInteger i = (NSInteger)[first indexAtPosition:0];
     if (i < 0 || (NSUInteger)i >= self.packages.count) return;
     if ([self.delegate respondsToSelector:@selector(grid:didSelectPackage:)])
         [self.delegate grid:self didSelectPackage:[self.packages objectAtIndex:(NSUInteger)i]];

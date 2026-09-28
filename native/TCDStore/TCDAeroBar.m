@@ -63,7 +63,7 @@
     [self.viewSwitch setSegmentCount:2];
     [self.viewSwitch setLabel:@"Store" forSegment:0];
     [self.viewSwitch setLabel:@"Downloads" forSegment:1];
-    [self.viewSwitch setTrackingMode:NSSegmentSwitchTrackingSelectOne];
+    [[self.viewSwitch cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
     [self.viewSwitch setSelectedSegment:0];
     [self.viewSwitch setTarget:self];
     [self.viewSwitch setAction:@selector(viewSwitchChanged:)];
