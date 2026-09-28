@@ -1,0 +1,291 @@
+[
+  {
+    "name": "Memo",
+    "developer": "TCD Store",
+    "category": "Utilities",
+    "accentColor": [
+      90,
+      147,
+      176
+    ],
+    "versions": [
+      "2.1.0",
+      "2.0.0",
+      "1.9.2"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Countdown",
+    "developer": "TCD Store",
+    "category": "Utilities",
+    "accentColor": [
+      93,
+      165,
+      188
+    ],
+    "versions": [
+      "1.4.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Pixel Peek",
+    "developer": "TCD Store",
+    "category": "Graphics",
+    "accentColor": [
+      127,
+      168,
+      201
+    ],
+    "versions": [
+      "0.9.1"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Screen Ruler",
+    "developer": "TCD Store",
+    "category": "Graphics",
+    "accentColor": [
+      107,
+      163,
+      193
+    ],
+    "versions": [
+      "3.0.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Palette",
+    "developer": "TCD Store",
+    "category": "Graphics",
+    "accentColor": [
+      90,
+      147,
+      176
+    ],
+    "versions": [
+      "1.2.3"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Logline",
+    "developer": "TCD Store",
+    "category": "Development",
+    "accentColor": [
+      90,
+      147,
+      176
+    ],
+    "versions": [
+      "4.1.0",
+      "3.8.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Hexedit",
+    "developer": "TCD Store",
+    "category": "Development",
+    "accentColor": [
+      111,
+      178,
+      214
+    ],
+    "versions": [
+      "2.0.1"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Diff Twain",
+    "developer": "TCD Store",
+    "category": "Development",
+    "accentColor": [
+      74,
+      144,
+      226
+    ],
+    "versions": [
+      "1.0.3"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Mailbox",
+    "developer": "TCD Store",
+    "category": "Internet",
+    "accentColor": [
+      68,
+      125,
+      168
+    ],
+    "versions": [
+      "5.2.0",
+      "5.0.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Fetchlet",
+    "developer": "TCD Store",
+    "category": "Internet",
+    "accentColor": [
+      127,
+      168,
+      201
+    ],
+    "versions": [
+      "0.6.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Ledger",
+    "developer": "TCD Store",
+    "category": "Office",
+    "accentColor": [
+      111,
+      178,
+      214
+    ],
+    "versions": [
+      "2.4.1"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Cardfile",
+    "developer": "TCD Store",
+    "category": "Office",
+    "accentColor": [
+      68,
+      125,
+      168
+    ],
+    "versions": [
+      "1.1.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Clockwork",
+    "developer": "TCD Store",
+    "category": "System",
+    "accentColor": [
+      68,
+      125,
+      168
+    ],
+    "versions": [
+      "3.2.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Clean Disk",
+    "developer": "TCD Store",
+    "category": "System",
+    "accentColor": [
+      107,
+      163,
+      193
+    ],
+    "versions": [
+      "1.1.4"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Sleep Aid",
+    "developer": "TCD Store",
+    "category": "System",
+    "accentColor": [
+      93,
+      165,
+      188
+    ],
+    "versions": [
+      "1.0.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Wallpaper",
+    "developer": "TCD Store",
+    "category": "System",
+    "accentColor": [
+      74,
+      144,
+      226
+    ],
+    "versions": [
+      "4.0.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Noughts",
+    "developer": "TCD Store",
+    "category": "Games",
+    "accentColor": [
+      90,
+      147,
+      176
+    ],
+    "versions": [
+      "1.0.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Patience",
+    "developer": "TCD Store",
+    "category": "Games",
+    "accentColor": [
+      74,
+      144,
+      226
+    ],
+    "versions": [
+      "6.1.2"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  },
+  {
+    "name": "Chess",
+    "developer": "TCD Store",
+    "category": "Games",
+    "accentColor": [
+      93,
+      165,
+      188
+    ],
+    "versions": [
+      "2.2.0"
+    ],
+    "downloadURL": "",
+    "icon": ""
+  }
+]

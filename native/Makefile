@@ -45,11 +45,18 @@ check:
 	if [ $$fail -eq 0 ]; then echo "all sources pass -fsyntax-only"; fi; \
 	exit $$fail
 
-$(APP): $(BUILD)/TCDStore
+# Resources are copied in, not compiled. demo-index.txt is the source the
+# install pipeline parses; catalogue.json is what TCDCatalogueManager reads to
+# populate the grid at launch, generated from that index by
+# tools/make-catalogue.py. Without the second one the store comes up empty.
+RESOURCES := TCDStore/demo-index.txt TCDStore/catalogue.json
+
+$(APP): $(BUILD)/TCDStore $(RESOURCES)
 	@mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	@cp $(BUILD)/TCDStore        $(APP)/Contents/MacOS/TCDStore
 	@cp TCDStore/Info.plist      $(APP)/Contents/Info.plist
 	@cp TCDStore/demo-index.txt  $(APP)/Contents/Resources/demo-index.txt
+	@cp TCDStore/catalogue.json  $(APP)/Contents/Resources/catalogue.json
 	@printf 'APPL????' > $(APP)/Contents/PkgInfo
 	@echo "built $(APP)  (floor $(FLOOR), SDK $(MACOSX_DIRS))"
 
