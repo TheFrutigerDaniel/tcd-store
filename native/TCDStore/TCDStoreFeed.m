@@ -38,16 +38,27 @@
 
 - (BOOL)prepareStore {
     TCDPackageDatabase *db = [self db];
-    if (!db) return NO;
+    if (!db) {
+        NSLog(@"TCD: prepareStore: the package database could not be opened");
+        return NO;
+    }
 
     // A store with no sources would show an empty grid, which says nothing
     // about whether the store works. So the bundled demo index joins a store
     // that has nothing, and stays away from one that has been set up.
-    [TCDDemoSource registerIfNoSourcesExist];
+    if (![TCDDemoSource isAvailable])
+        NSLog(@"TCD: prepareStore: demo-index.txt is not in the bundle");
+    if (![TCDDemoSource registerIfNoSourcesExist])
+        NSLog(@"TCD: prepareStore: demo source not registered");
 
-    for (NSDictionary *source in [db allSources])
+    NSArray *sources = [db allSources];
+    NSLog(@"TCD: prepareStore: %lu source(s)", (unsigned long)sources.count);
+    for (NSDictionary *source in sources)
         [self ingestSource:source];
 
+    NSLog(@"TCD: prepareStore: %lu package(s) in the database, %lu item(s) for the grid",
+          (unsigned long)[[db allPackages] count],
+          (unsigned long)[[self items] count]);
     return YES;
 }
 
@@ -92,13 +103,20 @@
 
 /* One source, one transaction: the index is replaced or it is not. */
 - (void)ingestData:(NSData *)data forSource:(NSString *)sourceIdentifier {
-    if (!data) return;
+    if (!data.length) {
+        NSLog(@"TCD: %@: index came back empty", sourceIdentifier);
+        return;
+    }
     TCDPackageDatabase *db = [self db];
     if (!db) return;
 
+    NSArray *skipped = nil;
     NSArray *packages = [TCDIndexParser parseIndexData:data
                                      sourceIdentifier:sourceIdentifier
-                                          skippedOut:NULL];
+                                          skippedOut:&skipped];
+    NSLog(@"TCD: %@: %lu byte(s) -> %lu package(s), %lu skipped",
+          sourceIdentifier, (unsigned long)data.length,
+          (unsigned long)packages.count, (unsigned long)skipped.count);
     if (!packages.count) return;
 
     [db beginTransaction];

@@ -212,10 +212,17 @@ static NSString *const kSchemaVersion = @"1";
         "INSERT OR REPLACE INTO packages ("
         " identifier,source,name,version,summary,description,developer,section,changelog,"
         " icon_url,download_url,sha256,install_prefix,type,arch,size_bytes,rating_count,"
-        " rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,receipt_id)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        " rating_average,min_os,depends,conflicts,installed,installed_version,auto_installed,"
+        " receipt_id,available_versions)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     sqlite3_stmt *st = NULL;
-    if (sqlite3_prepare_v2(_db, sql, -1, &st, NULL) != SQLITE_OK) return;
+    if (sqlite3_prepare_v2(_db, sql, -1, &st, NULL) != SQLITE_OK) {
+        // Was silent. A statement that will not prepare fails on every row, so
+        // the symptom is an empty grid with no error anywhere -- which is
+        // exactly what this hid for a while.
+        NSLog(@"TCD: upsertPackage: could not prepare: %s", sqlite3_errmsg(_db));
+        return;
+    }
 
     int i = 1;
     [self bindText:@"identifier" stmt:st index:i++ value:p.identifier];
@@ -245,7 +252,9 @@ static NSString *const kSchemaVersion = @"1";
     [self bindText:@"receipt_id" stmt:st index:i++ value:p.receiptID];
     [self bindText:@"available_versions" stmt:st index:i++ value:TCDJSONString(p.availableVersions)];
 
-    sqlite3_step(st);
+    if (sqlite3_step(st) != SQLITE_DONE)
+        NSLog(@"TCD: upsertPackage: step failed for %@: %s",
+              p.identifier, sqlite3_errmsg(_db));
     sqlite3_finalize(st);
 }
 
@@ -395,7 +404,10 @@ static NSString *const kSelectColumns =
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db,
             "INSERT OR REPLACE INTO sources (identifier,name,url,kind,added,last_status)"
-            " VALUES (?,?,?,?,?,0)", -1, &st, NULL) != SQLITE_OK) return;
+            " VALUES (?,?,?,?,?,0)", -1, &st, NULL) != SQLITE_OK) {
+        NSLog(@"TCD: addSource: could not prepare: %s", sqlite3_errmsg(_db));
+        return;
+    }
     [self bindText:@"x" stmt:st index:1 value:source[@"identifier"]];
     [self bindText:@"x" stmt:st index:2 value:source[@"name"]];
     [self bindText:@"x" stmt:st index:3 value:source[@"url"]];
