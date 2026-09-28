@@ -21,4 +21,9 @@
 // Clear the form
 - (void)clear;
 
+// Programmatic equivalent of clicking the form's own Save button. The
+// editor's bottom-bar Save forwards here, because the validation and the
+// delegate call live in the form and not in the editor.
+- (void)triggerSave;
+
 @end

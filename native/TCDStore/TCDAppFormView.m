@@ -191,6 +191,11 @@ static NSArray *kBuiltInCategories(void) {
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 
+- (void)triggerSave
+{
+    [self savePressed:self];
+}
+
 - (void)savePressed:(id)sender
 {
     NSString *name = [_nameField.stringValue
