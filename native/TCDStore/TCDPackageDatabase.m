@@ -138,6 +138,7 @@ static NSString *const kSchemaVersion = @"1";
         @"  added       REAL,"
         @"  last_sync   REAL,"
         @"  last_status INTEGER DEFAULT 0,"
+        @"  last_error  TEXT,"
         @"  index_blob  BLOB"
         @");"] &&
     [self exec:@"CREATE INDEX IF NOT EXISTS idx_packages_section ON packages(section)"] &&
@@ -158,6 +159,14 @@ static NSString *const kSchemaVersion = @"1";
         if (![self exec:@"ALTER TABLE packages ADD COLUMN available_versions TEXT"]) {
             if (error) *error = [NSError errorWithDomain:@"TCDStore" code:1 userInfo:
                 [NSDictionary dictionaryWithObject:@"could not add available_versions"
+                                             forKey:NSLocalizedDescriptionKey]];
+            return NO;
+        }
+    }
+    if (![self columnExists:@"last_error" inTable:@"sources"]) {
+        if (![self exec:@"ALTER TABLE sources ADD COLUMN last_error TEXT"]) {
+            if (error) *error = [NSError errorWithDomain:@"TCDStore" code:1 userInfo:
+                [NSDictionary dictionaryWithObject:@"could not add last_error"
                                              forKey:NSLocalizedDescriptionKey]];
             return NO;
         }
@@ -324,17 +333,23 @@ static NSString *const kSelectColumns =
     return [self query:[NSString stringWithFormat:@"SELECT %@ FROM packages ORDER BY name", kSelectColumns]];
 }
 
-- (TCDPackage *)packageWithIdentifier:(NSString *)identifier {
-    NSMutableArray *r = [NSMutableArray array];
-    if (!_db || !identifier.length) return nil;
+/* Source-scoped on purpose. The primary key is (source, identifier), so two
+   sources may legitimately carry the same package identifier; matching on the
+   identifier alone would hand back whichever row came first. */
+- (TCDPackage *)packageWithIdentifier:(NSString *)identifier
+                    sourceIdentifier:(NSString *)sourceIdentifier {
+    if (!_db || !identifier.length || !sourceIdentifier.length) return nil;
     sqlite3_stmt *st = NULL;
     NSString *sql = [NSString stringWithFormat:
-                     @"SELECT %@ FROM packages WHERE identifier=? LIMIT 1", kSelectColumns];
+                     @"SELECT %@ FROM packages WHERE identifier=? AND source=? LIMIT 1",
+                     kSelectColumns];
     if (sqlite3_prepare_v2(_db, [sql UTF8String], -1, &st, NULL) != SQLITE_OK) return nil;
     [self bindText:sql stmt:st index:1 value:identifier];
-    if (sqlite3_step(st) == SQLITE_ROW) [r addObject:[self packageFromRow:st]];
+    [self bindText:sql stmt:st index:2 value:sourceIdentifier];
+    TCDPackage *pkg = nil;
+    if (sqlite3_step(st) == SQLITE_ROW) pkg = [self packageFromRow:st];
     sqlite3_finalize(st);
-    return r.count ? r[0] : nil;
+    return pkg;
 }
 
 - (NSArray *)packagesInSection:(NSString *)section {
@@ -377,7 +392,7 @@ static NSString *const kSelectColumns =
     if (!_db) return out;
     sqlite3_stmt *st = NULL;
     if (sqlite3_prepare_v2(_db,
-            "SELECT identifier,name,url,kind,last_sync,last_status FROM sources ORDER BY name",
+            "SELECT identifier,name,url,kind,last_sync,last_status,last_error FROM sources ORDER BY name",
             -1, &st, NULL) != SQLITE_OK) return out;
     while (sqlite3_step(st) == SQLITE_ROW) {
         [out addObject:[NSDictionary dictionaryWithObjectsAndKeys:
@@ -386,7 +401,8 @@ static NSString *const kSelectColumns =
             [self textAtColumn:st column:2] ?: @"", @"url",
             [self textAtColumn:st column:3] ?: @"third-party", @"kind",
             [NSNumber numberWithDouble:sqlite3_column_double(st, 4)], @"lastSync",
-            [NSNumber numberWithInt:sqlite3_column_int(st, 5)], @"lastStatus", nil]];
+            [NSNumber numberWithInt:sqlite3_column_int(st, 5)], @"lastStatus",
+            [self textAtColumn:st column:6] ?: @"", @"lastError", nil]];
     }
     sqlite3_finalize(st);
     return out;
@@ -448,6 +464,29 @@ static NSString *const kSelectColumns =
     }
     sqlite3_finalize(st);
     return removed;
+}
+
+/* Records the outcome of a refresh. last_status is 1 for ok and 2 for failed,
+   which is what separates "never synced" from "synced once and broke" in the
+   Sources window. `message` is the reason, kept so a dead source can say why
+   rather than just going quiet. */
+- (void)markSourceWithIdentifier:(NSString *)identifier
+                          synced:(BOOL)ok
+                         message:(NSString *)message {
+    if (!_db || !identifier.length) return;
+    sqlite3_stmt *st = NULL;
+    if (sqlite3_prepare_v2(_db,
+            "UPDATE sources SET last_sync=?, last_status=?, last_error=? WHERE identifier=?",
+            -1, &st, NULL) != SQLITE_OK) {
+        NSLog(@"TCD: markSource: could not prepare: %s", sqlite3_errmsg(_db));
+        return;
+    }
+    sqlite3_bind_double(st, 1, [[NSDate date] timeIntervalSince1970]);
+    sqlite3_bind_int(st, 2, ok ? 1 : 2);
+    [self bindText:@"last_error" stmt:st index:3 value:ok ? @"" : (message ?: @"failed")];
+    [self bindText:@"identifier" stmt:st index:4 value:identifier];
+    sqlite3_step(st);
+    sqlite3_finalize(st);
 }
 
 - (void)storeIndexData:(NSData *)data forSource:(NSString *)identifier {

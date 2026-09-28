@@ -35,7 +35,10 @@
 #pragma mark - packages
 
 - (void)upsertPackage:(TCDPackage *)pkg;
-- (TCDPackage *)packageWithIdentifier:(NSString *)identifier;
+/* Source-scoped, because the primary key is (source, identifier) and two
+   sources may carry the same package id. */
+- (TCDPackage *)packageWithIdentifier:(NSString *)identifier
+                    sourceIdentifier:(NSString *)sourceIdentifier;
 - (NSArray *)allPackages;
 - (NSArray *)packagesInSection:(NSString *)section;
 - (NSArray *)installedPackages;
@@ -55,6 +58,12 @@
    to take its packages with it or they survive as orphans in the grid. */
 - (NSUInteger)removePackagesForSourceIdentifier:(NSString *)sourceIdentifier;
 - (void)storeIndexData:(NSData *)data forSource:(NSString *)identifier;
+
+/* Outcome of a refresh. synced:NO records the failure so the Sources window
+   can say why a source is stale instead of leaving it silently blank. */
+- (void)markSourceWithIdentifier:(NSString *)identifier
+                          synced:(BOOL)ok
+                         message:(NSString *)message;
 - (NSData *)indexDataForSource:(NSString *)identifier;
 
 @end

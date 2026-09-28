@@ -52,13 +52,32 @@
    the item did not come from the feed. */
 - (TCDPackage *)packageForItem:(TCDAppItem *)item;
 
+/* Every source, as dictionaries with identifier, name, url, kind, lastSync,
+   lastStatus and lastError. lastStatus is 0 never synced, 1 ok, 2 failed. */
+- (NSArray *)sources;
+
+/* How many packages a source currently contributes to the grid. */
+- (NSUInteger)packageCountForSourceIdentifier:(NSString *)identifier;
+
 /* Re-fetches every source. Local ones land immediately; remote ones post
    TCDCatalogueDidChangeNotification when they arrive. */
 - (void)refresh;
 
-/* Drops the bundled demo source and every package that came from it, leaving
-   the rest of the store alone. This is the removal path the demo source is
-   supposed to have. */
+/* One source, start to finish, on the calling thread. Returns NO if the fetch
+   failed or the index held nothing usable -- the source is still recorded as
+   failed, with the reason, and the grid falls back to the cached index. */
+- (BOOL)refreshSourceWithIdentifier:(NSString *)identifier;
+
+/* Adds a source and refreshes it. The identifier is the absolute URL, which is
+   stable and unique. NO if the URL will not parse or is already added. */
+- (BOOL)addSourceWithName:(NSString *)name url:(NSString *)url;
+
+/* Removes a source and every package that came from it, as one transaction.
+   NO if there was no such source. */
+- (BOOL)removeSourceWithIdentifier:(NSString *)identifier;
+
+/* Drops the bundled demo source. This is the removal path the demo source is
+   supposed to have, and it is what the Sources window's Remove button calls. */
 - (BOOL)removeDemoSource;
 
 @end

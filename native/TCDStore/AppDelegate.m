@@ -8,6 +8,7 @@
 #import "TCDCatalogueEditorWindowController.h"
 #import "TCDCatalogueManager.h"
 #import "TCDStoreFeed.h"
+#import "TCDSourcesWindowController.h"
 
 @interface AppDelegate ()
 @property (strong) NSWindow                              *window;
@@ -17,6 +18,7 @@
 @property (strong) TCDDownloadsViewController            *downloadsVC;
 @property (strong) TCDSettingsWindowController           *settingsWC;
 @property (strong) TCDCatalogueEditorWindowController    *editorWC;
+@property (strong) TCDSourcesWindowController            *sourcesWC;
 @end
 
 @implementation AppDelegate
@@ -70,32 +72,26 @@
     [appMenu addItem:quit];
 
     // ── Catalogue menu ────────────────────────────────────────────────────
-    NSMenuItem *catMenuItem = [[NSMenuItem alloc]
-        initWithTitle:@"Catalogue" action:nil keyEquivalent:@""];
-    [mainMenu addItem:catMenuItem];
-    NSMenu *catMenu = [[NSMenu alloc] initWithTitle:@"Catalogue"];
-    catMenuItem.submenu = catMenu;
+    NSMenuItem *srcMenuItem = [[NSMenuItem alloc]
+        initWithTitle:@"Sources" action:nil keyEquivalent:@""];
+    [mainMenu addItem:srcMenuItem];
+    NSMenu *srcMenu = [[NSMenu alloc] initWithTitle:@"Sources"];
+    srcMenuItem.submenu = srcMenu;
 
-    NSMenuItem *editor = [[NSMenuItem alloc]
-        initWithTitle:@"Edit Catalogue…"
-               action:@selector(openEditor:) keyEquivalent:@"e"];
-    editor.keyEquivalentModifierMask = NSCommandKeyMask | NSShiftKeyMask;
-    editor.target = self;
-    [catMenu addItem:editor];
+    NSMenuItem *sources = [[NSMenuItem alloc]
+        initWithTitle:@"Manage Sources…"
+               action:@selector(openSources:) keyEquivalent:@"s"];
+    sources.keyEquivalentModifierMask = NSCommandKeyMask | NSShiftKeyMask;
+    sources.target = self;
+    [srcMenu addItem:sources];
 
-    [catMenu addItem:[NSMenuItem separatorItem]];
+    [srcMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *importItem = [[NSMenuItem alloc]
-        initWithTitle:@"Import…"
-               action:@selector(importCatalogue:) keyEquivalent:@""];
-    importItem.target = self;
-    [catMenu addItem:importItem];
-
-    NSMenuItem *exportItem = [[NSMenuItem alloc]
-        initWithTitle:@"Export…"
-               action:@selector(exportCatalogue:) keyEquivalent:@""];
-    exportItem.target = self;
-    [catMenu addItem:exportItem];
+    NSMenuItem *refreshItem = [[NSMenuItem alloc]
+        initWithTitle:@"Refresh All Sources"
+               action:@selector(refreshAllSources:) keyEquivalent:@"r"];
+    refreshItem.target = self;
+    [srcMenu addItem:refreshItem];
 
     // ── Window menu ───────────────────────────────────────────────────────
     NSMenuItem *winMenuItem = [[NSMenuItem alloc]
@@ -172,6 +168,7 @@
 
     _settingsWC = [TCDSettingsWindowController sharedController];
     _editorWC   = [TCDCatalogueEditorWindowController sharedController];
+    _sourcesWC  = [TCDSourcesWindowController sharedController];
 
     [_window center];
     [_window makeKeyAndOrderFront:nil];
@@ -197,6 +194,19 @@
     [_settingsWC.window center];
     [_settingsWC showWindow:sender];
     [_settingsWC.window makeKeyAndOrderFront:sender];
+}
+
+- (IBAction)openSources:(id)sender
+{
+    [_sourcesWC.window center];
+    [_sourcesWC showWindow:sender];
+    [_sourcesWC.window makeKeyAndOrderFront:sender];
+}
+
+- (IBAction)refreshAllSources:(id)sender
+{
+    (void)sender;
+    [[TCDStoreFeed sharedFeed] refresh];
 }
 
 - (IBAction)openEditor:(id)sender
