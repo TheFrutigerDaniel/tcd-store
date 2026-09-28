@@ -34,6 +34,15 @@
 + (NSColor *)barEdge;           // #0d0f11
 + (NSColor *)barInnerHighlight; // white @ 0.18
 
+/* The Vista gloss that the bar is painted with: black at the top edge, a broad
+   silver band through the middle, black again at the bottom. Read bottom to
+   top, so the band sits just below the halfway point. */
++ (NSColor *)barGlossBottom;     // #0b0d0f
++ (NSColor *)barGlossLower;      // #6e747c
++ (NSColor *)barGlossBand;       // #b9bfc7 — the brightest stop
++ (NSColor *)barGlossUpper;      // #7a808a
++ (NSColor *)barGlossTop;        // #05060a
+
 /* controls inside the bar */
 + (NSColor *)searchWell;        // #1c1f25 — a dark inset, not a white box
 + (NSColor *)searchWellBorder;  // black @ 0.62
@@ -122,6 +131,19 @@
 /* A vertical multi-stop gradient. The bar needs more than two stops, and
    NSGradient's initWithColors:atLocations: is 10.0 but awkward for five. */
 + (void)fillVerticalGradient:(NSRect)rect stops:(NSArray *)stops;
+
+/* The same thing with the two ends named as points instead of as an angle, and
+   the end colours extended past them so the whole rect is covered.
+
+   NSGradient draws location 0.0 at the start of the angle, and for a positive
+   angle that is the bottom of the rect — but reading it as a half-remembered
+   convention is exactly how the bar ends up upside down, so this form spells
+   the start and the end out. `stops` is the same even-length array of NSColor
+   and NSNumber(0..1) pairs: 0.0 lands on `start`, 1.0 on `end`. */
++ (void)fillGradientInRect:(NSRect)rect
+                      from:(NSPoint)start
+                        to:(NSPoint)end
+                     stops:(NSArray *)stops;
 
 /* A rounded-rect gradient with a 1px border and an optional inner top
    highlight — the card look, used by the sidebar and the pills alike. */

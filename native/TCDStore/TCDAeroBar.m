@@ -9,7 +9,8 @@
 //  thing, because the real thing has correct hairlines, correct pressed states
 //  and a 1px border that sits exactly on the pixel grid.
 //
-//  What is left hand-drawn is the background: a black bar with a vertical ramp.
+//  What is left hand-drawn is the background, painted with the Vista gloss: a
+//  black top edge, a broad silver band through the middle, black at the bottom.
 //  That is a surface, not a control, and it is the one part of the design that
 //  has no stock equivalent.
 //
@@ -119,18 +120,21 @@
     (void)dirtyRect;
     NSRect b = [self bounds];
 
-    // A surface, not a control: one black block with a vertical ramp, light at
-    // the top, dark at the bottom, and a 1px top highlight and bottom edge.
-    [TCDTheme fillVerticalGradient:b
-        stops:@[[TCDTheme barLineOneTop],   @(0.0),
-                [TCDTheme barLineOneMid],   @(0.26),
-                [TCDTheme barBase],         @(0.47),
-                [TCDTheme barDivide],       @(0.53),
-                [TCDTheme barLineTwoBottom], @(1.0)]];
+    // A surface, not a control: the Vista gloss, black at the top edge, a
+    // broad silver band a little below halfway, black again at the bottom.
+    // The points are named rather than angled so the ramp cannot come out
+    // upside down -- see -fillGradientInRect:from:to:stops:.
+    [TCDTheme fillGradientInRect:b
+                            from:NSMakePoint(NSMinX(b), NSMinY(b))
+                              to:NSMakePoint(NSMinX(b), NSMaxY(b))
+                           stops:@[[TCDTheme barGlossBottom], @(0.00),
+                                   [TCDTheme barGlossLower],  @(0.24),
+                                   [TCDTheme barGlossBand],   @(0.47),
+                                   [TCDTheme barGlossUpper],  @(0.63),
+                                   [TCDTheme barGlossTop],    @(1.00)]];
 
-    [[TCDTheme barInnerHighlight] setFill];
-    NSRectFill(NSMakeRect(0.0, NSMaxY(b) - 1.0, NSWidth(b), 1.0));
-
+    // The top edge is black now, so the old white hairline is gone; what is
+    // left is the single dark line where the bar meets the content below it.
     [[TCDTheme barEdge] setFill];
     NSRectFill(NSMakeRect(0.0, 0.0, NSWidth(b), 1.0));
 }

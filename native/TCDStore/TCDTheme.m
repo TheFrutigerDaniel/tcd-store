@@ -24,6 +24,11 @@
 + (NSColor *)barLineTwoBottom  { return [NSColor colorWithCalibratedRed:0x19/255.0 green:0x1c/255.0 blue:0x20/255.0 alpha:1.0]; }
 + (NSColor *)barEdge           { return [NSColor colorWithCalibratedRed:0x0d/255.0 green:0x0f/255.0 blue:0x11/255.0 alpha:1.0]; }
 + (NSColor *)barInnerHighlight { return [NSColor colorWithCalibratedWhite:1.0 alpha:0.18]; }
++ (NSColor *)barGlossBottom  { return [NSColor colorWithCalibratedRed:0x0b/255.0 green:0x0d/255.0 blue:0x0f/255.0 alpha:1.0]; }
++ (NSColor *)barGlossLower   { return [NSColor colorWithCalibratedRed:0x6e/255.0 green:0x74/255.0 blue:0x7c/255.0 alpha:1.0]; }
++ (NSColor *)barGlossBand    { return [NSColor colorWithCalibratedRed:0xb9/255.0 green:0xbf/255.0 blue:0xc7/255.0 alpha:1.0]; }
++ (NSColor *)barGlossUpper   { return [NSColor colorWithCalibratedRed:0x7a/255.0 green:0x80/255.0 blue:0x8a/255.0 alpha:1.0]; }
++ (NSColor *)barGlossTop     { return [NSColor colorWithCalibratedRed:0x05/255.0 green:0x06/255.0 blue:0x0a/255.0 alpha:1.0]; }
 
 #pragma mark - controls
 
@@ -161,6 +166,32 @@
                                               colorSpace:[NSColorSpace genericRGBColorSpace]];
     free(where);
     [g drawInRect:rect angle:90.0];
+}
+
++ (void)fillGradientInRect:(NSRect)rect
+                      from:(NSPoint)start
+                        to:(NSPoint)end
+                     stops:(NSArray *)stops {
+    NSMutableArray *colors = [NSMutableArray arrayWithCapacity:stops.count / 2];
+    NSMutableArray *locations = [NSMutableArray arrayWithCapacity:stops.count / 2];
+    for (NSUInteger i = 0; i + 1 < stops.count; i += 2) {
+        [colors addObject:stops[i]];
+        [locations addObject:stops[i + 1]];
+    }
+    NSUInteger n = locations.count;
+    CGFloat *where = (CGFloat *)malloc(sizeof(CGFloat) * (n ? n : 1));
+    for (NSUInteger i = 0; i < n; i++)
+        where[i] = (CGFloat)[[locations objectAtIndex:i] doubleValue];
+    NSGradient *g = [[NSGradient alloc] initWithColors:colors
+                                             atLocations:where
+                                              colorSpace:[NSColorSpace genericRGBColorSpace]];
+    free(where);
+    // The two "extends past the ends" options are what make this fill `rect`
+    // rather than just the segment between the two points.
+    [g drawFromPoint:start
+              toPoint:end
+             options:NSGradientDrawsBeforeStartLocation |
+                     NSGradientDrawsAfterEndLocation];
 }
 
 + (void)fillRoundedGradient:(NSRect)rect
